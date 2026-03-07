@@ -50,7 +50,7 @@ When the task is to **create a new feature** (feature doesn’t exist yet):
 2. Create `docs/<feature-folder>/feature.md` as the **main** feature doc: outline the feature in full (overview, Active state), and add a section that references other docs in the folder for deeper detail (create those other docs when needed). Write for both humans and AI (clear structure, explicit paths/state, readable prose). Use `docs/template-new-feature/feature.md` as reference.
 3. Create `docs/<feature-folder>/task-<slug>.md` with exactly three level-2 headers: `## Planned`, `## In progress`, `## Completed`. Add a line at the top that the feature doc in this folder holds feature details and active state. Copy structure from `docs/template-new-feature/task-gpio-led-blink.md` or use minimal content.
 4. Update `docs/docs-index.md` **Current structure** if needed so the new folder is listed.
-5. **Create the task branch:** From a clean state, ensure you're on `main` and up to date (`git checkout main`, `git pull` if applicable). Create and checkout branch `main--<task-slug>` — use the slug of the task doc you created (for this first task it’s usually the same as the feature folder name, e.g. `main--gpio-led-blink`). **Note the branch in the task doc** (e.g. at the top: **Branch:** `main--<task-slug>`).
+5. **Create the task branch:** Checkout `main`, pull from remote so main is up to date (e.g. `git checkout main`, `git pull origin main`), then create and checkout branch `main--<task-slug>` — use the slug of the task doc you created (for this first task it’s usually the same as the feature folder name, e.g. `main--gpio-led-blink`). **Note the branch in the task doc** (e.g. at the top: **Branch:** `main--<task-slug>`).
 
 ---
 
@@ -60,7 +60,7 @@ When the task is to **make a change to an existing feature** (folder and feature
 
 1. Create `docs/<feature-folder>/task-<slug>.md` in that feature folder. Use a new slug for this task (e.g. existing `task-gpio-led-blink.md`, new task `task-add-second-led.md` → slug `add-second-led`).
 2. Use exactly three level-2 headers: `## Planned`, `## In progress`, `## Completed`. Add at the top: feature doc in this folder holds feature details and active state, and **Branch:** `main--<task-slug>` (e.g. `main--add-second-led`). Copy structure from `docs/template-new-feature/task-gpio-led-blink.md` or use minimal content. Fill **Planned** with the user’s goals or steps for this task.
-3. **Create the task branch:** Ensure you're on `main` and up to date. Create and checkout branch `main--<task-slug>` (e.g. `main--add-second-led`). This task gets its own branch; do not reuse another task’s branch.
+3. **Create the task branch:** Checkout `main`, pull from remote so main is up to date (e.g. `git checkout main`, `git pull origin main`), then create and checkout branch `main--<task-slug>` (e.g. `main--add-second-led`). This task gets its own branch; do not reuse another task’s branch.
 4. Optionally add a reference to the new task doc from the main feature doc (e.g. under "Related task doc(s)") so it’s discoverable.
 
 ---
