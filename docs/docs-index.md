@@ -1,5 +1,7 @@
 # docs-index.md — map of docs
 
+**Humans:** Use this as a table of contents for the docs folder.
+
 Use this when you need to find a specific doc or see the full layout. User references **intro.md** first when starting a chat.
 
 **Core docs**

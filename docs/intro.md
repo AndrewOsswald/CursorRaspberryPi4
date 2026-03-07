@@ -1,5 +1,7 @@
 # intro.md — agent context
 
+**Humans:** This is the entry point we give to agents; it also summarizes how the project’s docs and tasks are organized.
+
 You have no prior context. **Read in order:** (1) task doc — path from user or search `docs/**/task-*.md`; (2) feature doc in that folder — `docs/<feature-folder>/feature.md`; (3) if the task involves hardware/GPIO/pins/host — `docs/system-environment.md`. To find any doc: `docs/docs-index.md`.
 
 ## Context sources
@@ -23,8 +25,8 @@ You have no prior context. **Read in order:** (1) task doc — path from user or
 
 ## Paths
 
-- Repo root = project root.
-- `docs/` contains: intro.md, new.md, docs-index.md, system-environment.md, cleanup.md, setup.md, template-new-feature/ (feature.md + task-gpio-led-blink.md), and one folder per feature (each with feature.md as the main outline and zero or more other docs for deeper detail, plus one or more task-<slug>.md). Code/config paths come from the task doc or feature doc or repo. For creating a new feature or task, see `docs/new.md`. For initializing a new project after copying this docs folder, see `docs/setup.md`.
+- Repo root = project root. `docs/` contains: intro.md, new.md, docs-index.md, system-environment.md, cleanup.md, setup.md, template-new-feature/, and one folder per feature (each with feature.md plus zero or more other docs and one or more task-<slug>.md). Code/config paths come from the task doc, feature doc, or repo.
+- **Creating a feature or task:** `docs/new.md`. **Initializing a new project** (after copying this docs folder): `docs/setup.md`.
 
 ## Rules
 

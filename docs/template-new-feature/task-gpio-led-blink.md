@@ -1,6 +1,8 @@
 # Task: GPIO LED blink (template example)
 
-Example task doc for this feature. **For how this feature functions and its current active state (wiring, code, what works), see `feature.md` in this folder.** Copy this folder (and both `feature.md` and this file) when starting a new feature; rename the folder and files to match. See `docs/new.md` for the convention.
+**Template:** Copy this folder (and `feature.md`) when starting a new feature; rename folder and files to match. See `docs/new.md` for the convention. Written for both humans and agents.
+
+**Feature details and active state:** See `feature.md` in this folder (wiring, code, what works).
 
 **Branch:** `main--<task-slug>` (e.g. `main--gpio-led-blink`). One branch per task; set when the task is created; cleanup pushes to this branch.
 

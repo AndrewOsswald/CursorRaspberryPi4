@@ -1,6 +1,6 @@
 # Feature: GPIO LED blink (template example)
 
-Main feature doc for this folder. Copy this folder when starting a new feature; rename folder and update docs. See `docs/new.md` for conventions.
+**Template:** Copy this folder when starting a new feature; rename folder and update docs. See `docs/new.md` for conventions. Written for both humans and agents.
 
 Branches are per task (see each task doc for **Branch:** `main--<task-slug>`). Cleanup pushes to the active task’s branch.
 

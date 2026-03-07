@@ -1,6 +1,6 @@
 # system-environment.md — hardware and software baseline
 
-Use this file when the task involves hardware, GPIO, pinout, 3.3V constraints, config path, or interfaces (GPIO/I2C/SPI/UART). Do not guess; read the values here.
+Use this file when the task involves hardware, GPIO, pinout, 3.3V constraints, config path, or interfaces (GPIO/I2C/SPI/UART). Do not guess; read the values here. *(Regenerate via `docs/setup.md` when moving to a new machine.)*
 
 ## Critical constraints (don’t violate)
 

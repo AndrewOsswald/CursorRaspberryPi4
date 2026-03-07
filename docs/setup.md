@@ -1,5 +1,7 @@
 # setup.md — how the docs work and how to initialize a new project
 
+**Humans:** After copying this docs folder to a new project, tell the agent to read this file and set itself up; it will regenerate system-environment for the new machine.
+
 Use this file when you’ve copied this `docs/` folder into a **new project** and the user says to set yourself up (e.g. “read setup.md and set yourself up”). It explains how the documentation is organized and what you need to do so the project is ready.
 
 ---
@@ -27,7 +29,7 @@ You’ve copied this docs folder into a new project folder. To set yourself up:
 That file currently describes a different machine. Regenerate it for **this** machine:
 
 1. **Read the current `docs/system-environment.md`** to see its structure: sections (Critical constraints, Config path, Pinout, GPIO and interfaces, Hardware reference, Software reference), table formats, and the best-practices paragraph. Keep the same structure and formatting; only the **values** will change.
-2. **Run system commands** to gather this machine’s data. Examples of what you need (adjust for OS/hardware):
+2. **Run system commands** to gather this machine’s data. If a command isn’t available (e.g. `vcgencmd` on non-Pi), skip it and omit or adapt that section in the output. Examples of what you need (adjust for OS/hardware):
    - **OS:** `cat /etc/os-release` (or equivalent)
    - **Kernel:** `uname -a`, `cat /proc/version`
    - **CPU / board:** `cat /proc/cpuinfo` (model, revision, serial if Pi), `cat /proc/device-tree/model` if present

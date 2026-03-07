@@ -1,5 +1,7 @@
 # cleanup.md — doc sync pass
 
+**Humans:** When you’re done with a session, say e.g. “clean up according to cleanup.md” so the agent syncs docs and pushes to the task branch.
+
 When the user says to clean up according to this file, run through the steps below. This is a final pass to catch anything that wasn’t updated during the session. During normal work, the agent should already be updating docs as it goes (see intro); this file is for an explicit cleanup at the end.
 
 ---
@@ -29,7 +31,7 @@ When the user says to clean up according to this file, run through the steps bel
 ## 3. Push to the task branch
 
 - **Branch:** There is one branch per task. The active task doc should note its branch (e.g. **Branch:** `main--add-second-led`). Use that branch name. If missing, infer from the task doc filename: `task-<slug>.md` → branch `main--<slug>`.
-- **Actions:** Ensure all doc and code changes are committed. Checkout that task’s branch if not already on it. Push to origin (e.g. `git push -u origin <branch>` if the branch isn’t set upstream yet, otherwise `git push`).
+- **Actions:** Commit any uncommitted doc and code changes. Checkout that task’s branch if not already on it. Push to origin (e.g. `git push -u origin <branch>` if the branch isn’t set upstream yet, otherwise `git push`).
 - If work touched more than one task, push the branch for the primary task the user cared about, or push each task branch that has new commits.
 
 ---

@@ -1,5 +1,7 @@
 # new.md — start a new task or create a new feature
 
+**Humans:** When you want to start a new task or feature, point an agent at intro and this file (e.g. “read intro and new.md, then create a new feature for X”).
+
 When the user asks you to start a new task or create a new feature, follow this file. For general context (where to get task/feature state, how to read docs), see `docs/intro.md`.
 
 ---
