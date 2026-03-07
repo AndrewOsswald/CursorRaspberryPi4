@@ -30,6 +30,9 @@ docs/
   template-new-feature/
     feature.md
     task-gpio-led-blink.md
+  gpio-led-blink/
+    feature.md
+    task-gpio-led-blink.md
 ```
 
 (Feature folders added under `docs/` as needed; user gives task doc path when starting a chat.)
