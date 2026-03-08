@@ -90,47 +90,47 @@ If you don’t have enough shades to give every control line a unique color, kee
 
 ## Step-by-step wiring
 
+*(Module side uses the **board labels** on the Wio-SX1262 for XIAO carrier—3V3, GND, MOSI, MISO, SCK, NSS, RST, BUSY, DIO1, RF_SW, DO. If you have the raw 12-pin SMT module instead, see the Board labels table above for pin-number mapping.)*
+
 **1. Power off the Pi** (shutdown, then disconnect power).
 
-**2. Identify the pins on each Wio-SX1262.**  
-- **If you have the Wio-SX1262 for XIAO carrier board** (labels on the back): use the **Board labels** table above—connect to **3V3**, **GND**, **MOSI**, **MISO**, **SCK**, **NSS**, **RST**, **BUSY**, **DIO1**, **RF_SW**, and **DO** (antenna) as labeled; ignore pin numbers in the steps below and use those labels instead.  
-- **If you have the raw 12-pin SMT module:** Pin 1 is usually marked (dot or “1”); count in order. Pin 1 = RF_SW, Pin 6 = NSS, Pin 8 = VCC, Pins 7 and 10 = GND. See `wio-sx1262-module.md`.
+**2. On each module, find the labeled pads/headers** on the back: **3V3**, **GND**, **MOSI**, **MISO**, **SCK**, **NSS**, **RST**, **BUSY**, **DIO1**, **RF_SW**, **DO**.
 
 **3. Connect grounds first (black).**  
-- **Black:** Pi physical pin 6 (GND) → Module A pin 7 (GND).  
-- **Black:** Pi physical pin 9 (GND) → Module A pin 10 (GND).  
-- **Black:** Pi physical pin 14 (GND) → Module B pin 7 (GND).  
-- **Black:** Pi physical pin 20 (GND) → Module B pin 10 (GND).  
-(You can use a single GND rail on a breadboard; just ensure Pi GND and both modules’ GND are tied together.)
+- **Black:** Pi physical pin 6 (GND) → Module A **GND**.  
+- **Black:** Pi physical pin 9 (GND) → Module A **GND** (second pad if present).  
+- **Black:** Pi physical pin 14 (GND) → Module B **GND**.  
+- **Black:** Pi physical pin 20 (GND) → Module B **GND** (second pad if present).  
+(Or use a single GND rail on a breadboard; ensure Pi GND and both modules’ GND are tied together.)
 
 **4. Connect 3.3 V (red).**  
-- **Red:** Pi physical pin 1 (3.3 V) → Module A pin 8 (VCC).  
-- **Red:** Pi physical pin 17 (3.3 V) → Module B pin 8 (VCC).  
-(Or one 3.3 V source to both VCC pins; ensure common GND.)
+- **Red:** Pi physical pin 1 (3.3 V) → Module A **3V3**.  
+- **Red:** Pi physical pin 17 (3.3 V) → Module B **3V3**.  
+(Use **3V3** only—not VIN—when powering from the Pi.)
 
 **5. Connect shared SPI (orange, yellow, green — to both modules).**  
-- **Orange:** Pi pin 19 (GPIO 10, MOSI) → Module A pin 3 (MOSI) **and** Module B pin 3 (MOSI).  
-- **Yellow:** Pi pin 21 (GPIO 9, MISO) → Module A pin 2 (MISO) **and** Module B pin 2 (MISO).  
-- **Green:** Pi pin 23 (GPIO 11, SCLK) → Module A pin 4 (SCK) **and** Module B pin 4 (SCK).
+- **Orange:** Pi pin 19 (GPIO 10, MOSI) → Module A **MOSI** and Module B **MOSI**.  
+- **Yellow:** Pi pin 21 (GPIO 9, MISO) → Module A **MISO** and Module B **MISO**.  
+- **Green:** Pi pin 23 (GPIO 11, SCLK) → Module A **SCK** and Module B **SCK**.
 
 **6. Connect chip select (NSS).**  
-- **Blue:** Pi pin 24 (GPIO 8, CE0) → **only** Module A pin 6 (NSS).  
-- **Violet:** Pi pin 26 (GPIO 7, CE1) → **only** Module B pin 6 (NSS).
+- **Blue:** Pi pin 24 (GPIO 8, CE0) → **only** Module A **NSS**.  
+- **Violet:** Pi pin 26 (GPIO 7, CE1) → **only** Module B **NSS**.
 
-**7. Connect Module A control pins (blue — label ends A-NRST, A-BUSY, A-DIO1, A-RF_SW).**  
-- **Blue:** Pi pin 11 (GPIO 17) → Module A pin 5 (NRST).  
-- **Blue:** Pi pin 12 (GPIO 18) → Module A pin 11 (BUSY).  
-- **Blue:** Pi pin 15 (GPIO 22) → Module A pin 12 (DIO1).  
-- **Blue:** Pi pin 16 (GPIO 23) → Module A pin 1 (RF_SW).
+**7. Connect Module A control pins (blue — label ends A-RST, A-BUSY, A-DIO1, A-RF_SW).**  
+- **Blue:** Pi pin 11 (GPIO 17) → Module A **RST**.  
+- **Blue:** Pi pin 12 (GPIO 18) → Module A **BUSY**.  
+- **Blue:** Pi pin 15 (GPIO 22) → Module A **DIO1**.  
+- **Blue:** Pi pin 16 (GPIO 23) → Module A **RF_SW**.
 
-**8. Connect Module B control pins (violet — label ends B-NRST, B-BUSY, B-DIO1, B-RF_SW).**  
-- **Violet:** Pi pin 22 (GPIO 25) → Module B pin 5 (NRST).  
-- **Violet:** Pi pin 29 (GPIO 5) → Module B pin 11 (BUSY).  
-- **Violet:** Pi pin 31 (GPIO 6) → Module B pin 12 (DIO1).  
-- **Violet:** Pi pin 32 (GPIO 12) → Module B pin 1 (RF_SW).
+**8. Connect Module B control pins (violet — label ends B-RST, B-BUSY, B-DIO1, B-RF_SW).**  
+- **Violet:** Pi pin 22 (GPIO 25) → Module B **RST**.  
+- **Violet:** Pi pin 29 (GPIO 5) → Module B **BUSY**.  
+- **Violet:** Pi pin 31 (GPIO 6) → Module B **DIO1**.  
+- **Violet:** Pi pin 32 (GPIO 12) → Module B **RF_SW**.
 
 **9. Antenna.**  
-Connect an antenna (or 50 Ω load) to each module’s RF port (IPEX or SMT pin 9 on -N). Do not run the radios without an antenna or load; it can damage the PA.
+Connect an antenna (or 50 Ω load) to each module’s **DO** (RF output). Do not run the radios without an antenna or load; it can damage the PA.
 
 **10. Double-check.**  
 - No 5 V on any module or GPIO.  
