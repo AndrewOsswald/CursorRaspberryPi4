@@ -29,6 +29,7 @@ CMD_READ_BUFFER = 0x1E
 CMD_GET_RXBUFFERSTATUS = 0x13
 CMD_SET_TCXOMODE = 0x97
 CMD_SET_REGULATORMODE = 0x96
+CMD_SET_PACONFIG = 0x95
 CMD_CALIBRATE = 0x89
 CMD_CALIBRATEIMAGE = 0x98
 CMD_SET_BUFFERBASEADDRESS = 0x8F
@@ -41,6 +42,23 @@ LORA_BW_125000 = 0x04
 LORA_CR_4_5 = 0x01
 IRQ_TX_DONE = 0x0001
 IRQ_RX_DONE = 0x0002
+
+# OpError bits (SX1262 datasheet Table 13-85) for decode_device_error()
+_OPERROR_NAMES = [
+    "RC64K_CALIB_ERR", "RC13M_CALIB_ERR", "PLL_CALIB_ERR", "ADC_CALIB_ERR",
+    "IMG_CALIB_ERR", "XOSC_START_ERR", "PLL_LOCK_ERR", "RFU",
+    "PA_RAMP_ERR",
+]
+
+
+def decode_device_error(err_16: int) -> list[str]:
+    """Decode 16-bit GetDeviceErrors value to list of set bit names (for logging)."""
+    names = []
+    for b in range(min(9, 16)):
+        if (err_16 >> b) & 1:
+            names.append(_OPERROR_NAMES[b] if b < len(_OPERROR_NAMES) else f"bit{b}")
+    return names
+
 
 # 32 MHz XTAL: freq_reg = freq_Hz * 2^25 / 32e6
 def freq_to_reg(freq_hz: float) -> int:
@@ -102,7 +120,9 @@ class SX1262:
     def cmd(self, tx: list[int], read_len: int = 0) -> list[int]:
         """Send command tx; optionally read read_len bytes. Waits BUSY before and after."""
         if not self.wait_busy():
-            raise RuntimeError("BUSY did not go low before cmd")
+            _ms(100)  # may have seen glitches on shared SPI; give chip time to idle
+            if not self.wait_busy(timeout_ms=1000):
+                raise RuntimeError("BUSY did not go low before cmd")
         self._open_spi()
         if read_len > 0:
             tx = tx + [0] * read_len
@@ -115,11 +135,11 @@ class SX1262:
 
     def reset(self) -> None:
         self._nrst_low()
-        _ms(10)
+        _ms(20)
         self._nrst_high()
-        _ms(150)
+        _ms(500)  # allow chip and TCXO to power up (longer for cold start)
         self._rf_sw_rx()
-        self.cmd([CMD_CLR_ERROR, 0x07])  # clear all errors
+        self.cmd([CMD_CLR_ERROR, 0x00, 0x00])  # clear all errors (datasheet 13.6)
 
     def init_lora(
         self,
@@ -130,40 +150,54 @@ class SX1262:
         preamble_len: int = 8,
         payload_len: int = 4,
     ) -> None:
-        """Configure LoRa: packet type, frequency, modulation, packet params. Enables TCXO."""
-        # Standby RC (0x00); XOSC (0x01) can be used but RC often used before TX)
+        """Configure LoRa: packet type, frequency, modulation, packet params. Enables TCXO.
+        Order matches RadioLib modSetup: standby, TCXO, config (packet/freq/cal), then regulator last."""
+        _ms(50)
+        # RadioLib: reset then retry standby until it works ("SX126x often refuses first few commands")
+        for _ in range(20):
+            self.cmd([CMD_SET_STANDBY, 0x00])
+            if self.wait_busy(200):
+                break
+            _ms(10)
+        # RadioLib: setTCXO then config(); regulator is set *after* config
+        TCXO_DELAY_UNITS = 320  # 5 ms
+        self.cmd([CMD_SET_TCXOMODE, 0x06, (TCXO_DELAY_UNITS >> 16) & 0xFF, (TCXO_DELAY_UNITS >> 8) & 0xFF, TCXO_DELAY_UNITS & 0xFF])
         self.cmd([CMD_SET_STANDBY, 0x00])
-        # TCXO: 3.0 V, 0 ms delay (Wio module needs TCXO)
-        self.cmd([CMD_SET_TCXOMODE, 0x06, 0x00, 0x00, 0x00])
-        _ms(1)
-        # Regulator: DC-DC (datasheet for high power)
-        self.cmd([CMD_SET_REGULATORMODE, 0x01])
-        # Packet type LoRa
         self.cmd([CMD_SET_PACKETTYPE, PACKET_TYPE_LORA])
-        # Frequency
         r = freq_to_reg(freq_hz)
         self.cmd([CMD_SET_RFFREQUENCY, (r >> 24) & 0xFF, (r >> 16) & 0xFF, (r >> 8) & 0xFF, r & 0xFF])
-        # Calibrate all blocks (mask 0x7F)
         self.cmd([CMD_CALIBRATE, 0x7F])
         if not self.wait_busy(1000):
             raise RuntimeError("Calibrate BUSY timeout")
-        # Image calibration for 862–930 MHz (band 0)
-        self.cmd([CMD_CALIBRATEIMAGE, 0x00])
+        _ms(2)
+        # CalibrateImage takes 2 bytes (datasheet). 863–870: 0xD7,0xDB; 902–928: 0xE1,0xE9. Both must be odd.
+        if freq_hz >= 900_000_000:
+            cal_img = [0xE1, 0xE9]  # 902–928 MHz
+        else:
+            cal_img = [0xD7, 0xDB]  # 863–870 MHz
+        self.cmd([CMD_CALIBRATEIMAGE] + cal_img)
         if not self.wait_busy(1000):
             raise RuntimeError("CalibrateImage BUSY timeout")
-        # TX params: +14 dBm, 200 us ramp
-        self.cmd([CMD_SET_TXPARAMS, 14, 0x01])
-        # Modulation: SF, BW, CR, LDRO=0
+        _ms(2)
+        self.cmd([CMD_CLR_ERROR, 0x00, 0x00])
+        # Set DC-DC before XOSC (Wio uses DC-DC; XOSC may need stable supply)
+        self.cmd([CMD_SET_REGULATORMODE, 0x01])
+        self.cmd([CMD_SET_STANDBY, 0x01])
+        self.cmd([CMD_CLR_ERROR, 0x00, 0x00])
+        # Rest of LoRa params (RadioLib does these in setCodingRate, setSyncWord, setPreambleLength, then SX1262 setSpreadingFactor, setBandwidth, setFrequency, fixPaClamping, setOutputPower)
+        self.cmd([CMD_SET_PACONFIG, 0x02, 0x01, 0x01, 0x01])  # paDutyCycle 2, hpMax 1 (RadioLib paOptTable for low power)
+        self.cmd([CMD_SET_TXPARAMS, 10, 0x01])
         self.cmd([CMD_SET_MODULATIONPARAMS, sf, bw, cr, 0x00])
-        # Packet: preamble, header type 0 (explicit), payload len, CRC on, invert IQ 0
         self.cmd([CMD_SET_PACKETPARAMS, preamble_len >> 8, preamble_len & 0xFF, 0x00, payload_len, 0x01, 0x00])
-        # TX/RX buffer base address 0
         self.cmd([CMD_SET_BUFFERBASEADDRESS, 0x00, 0x00])
-        # DIO1 on TxDone and RxDone
         self.cmd([CMD_SET_DIOIRQPARAMS, (IRQ_TX_DONE | IRQ_RX_DONE) >> 8, (IRQ_TX_DONE | IRQ_RX_DONE) & 0xFF, 0, 0])
 
     def clear_irq(self) -> None:
         self.cmd([CMD_CLR_IRQSTATUS, 0xFF, 0xFF])
+
+    def clear_error(self) -> None:
+        """Clear chip error flags so TX/RX can proceed (datasheet 13.6)."""
+        self.cmd([CMD_CLR_ERROR, 0x00, 0x00])
 
     def get_error(self) -> int:
         r = self.cmd([CMD_GET_ERROR, 0x00, 0x00], read_len=2)
@@ -172,8 +206,8 @@ class SX1262:
         return (r[0] << 8) | r[1]
 
     def get_status(self) -> int:
-        # GetStatus: send 2 bytes (cmd + dummy), chip returns [status, dummy]
-        r = self.cmd([CMD_GET_STATUS, 0x00])
+        # GetStatus: send 0xC0; chip returns 1 byte (status). Some docs: [7:4]=CmdStatus [3:0]=ChipMode.
+        r = self.cmd([CMD_GET_STATUS])
         return r[0] if len(r) >= 1 else 0
 
     def get_irq(self) -> int:
@@ -202,6 +236,9 @@ class SX1262:
     def start_tx(self, timeout_rtc: int = 0) -> None:
         """Start TX. timeout_rtc: 0 = single shot (no timeout); else RTC steps (15.625 us)."""
         self._rf_sw_tx()
+        self.cmd([CMD_SET_STANDBY, 0x01])
+        _ms(5)
+        self.cmd([CMD_CLR_ERROR, 0x00, 0x00])  # clear before SetTx so PLL/cal errors don't block
         self.cmd([CMD_SET_TX, (timeout_rtc >> 16) & 0xFF, (timeout_rtc >> 8) & 0xFF, timeout_rtc & 0xFF])
 
     def start_rx(self, timeout_rtc: int = 0) -> None:
@@ -210,7 +247,7 @@ class SX1262:
         self.cmd([CMD_SET_RX, (timeout_rtc >> 16) & 0xFF, (timeout_rtc >> 8) & 0xFF, timeout_rtc & 0xFF])
 
     def wait_tx_done(self, timeout_ms: float = 5000) -> bool:
-        _ms(50)  # allow chip to enter TX and start sending
+        _ms(400)  # allow chip to enter FS then TX (STBY_XOSC -> TX can take 100s of ms with TCXO)
         deadline = time.monotonic() + (timeout_ms / 1000.0)
         while time.monotonic() < deadline:
             irq = self.get_irq()

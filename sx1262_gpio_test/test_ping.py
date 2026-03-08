@@ -21,7 +21,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 from gpiozero import InputDevice, OutputDevice
 
 from pin_config import MODULE_A, MODULE_B
-from sx1262_driver import SX1262
+from sx1262_driver import SX1262, decode_device_error
 
 PAYLOAD_LEN = 4
 PING = b"ping"
@@ -87,8 +87,9 @@ def main() -> int:
     nrst_b = OutputDevice(MODULE_B["nrst"], initial_value=True)
     rf_sw_b = OutputDevice(MODULE_B["rf_sw"], initial_value=True)
 
+    # Module A = CE0 (spidev0.0), Module B = CE1 (spidev0.1) per wiring.md
     radio_a = SX1262(
-        0, 0,
+        0, 0,  # CE0 -> Module A
         busy_read=lambda: bool(busy_a.value),
         nrst_high=nrst_a.on,
         nrst_low=nrst_a.off,
@@ -96,7 +97,7 @@ def main() -> int:
         rf_sw_tx=rf_sw_a.off,
     )
     radio_b = SX1262(
-        0, 1,
+        0, 1,  # CE1 -> Module B
         busy_read=lambda: bool(busy_b.value),
         nrst_high=nrst_b.on,
         nrst_low=nrst_b.off,
@@ -104,14 +105,43 @@ def main() -> int:
         rf_sw_tx=rf_sw_b.off,
     )
 
+    success = False
     try:
-        log.append("Resetting and initializing both modules (LoRa 868 MHz, SF7, 4-byte payload)...")
+        log.append(f"Resetting and initializing both modules (LoRa {args.freq/1e6:.0f} MHz, SF7, 4-byte payload)...")
         radio_a.reset()
         radio_b.reset()
-        radio_a.init_lora(freq_hz=args.freq, payload_len=PAYLOAD_LEN)
+        if not radio_a.wait_busy(timeout_ms=2000):
+            log.append("Module A: BUSY did not go low after reset.")
+            raise RuntimeError("Module A BUSY timeout after reset")
+        if not radio_b.wait_busy(timeout_ms=2000):
+            log.append("Module B: BUSY did not go low after reset.")
+            raise RuntimeError("Module B BUSY timeout after reset")
+        # Init B first so A's SPI traffic can't glitch B; then A
         radio_b.init_lora(freq_hz=args.freq, payload_len=PAYLOAD_LEN)
+        radio_b._close_spi()
+        radio_a.init_lora(freq_hz=args.freq, payload_len=PAYLOAD_LEN)
+        radio_a._close_spi()
         log.append("OK.")
+        time.sleep(0.05)
+        try:
+            sa0 = radio_a.get_status()
+        except RuntimeError:
+            sa0 = 0xFF
+            log.append("  (A status read skipped: BUSY)")
+        try:
+            sb0 = radio_b.get_status()
+        except RuntimeError:
+            sb0 = 0xFF
+            log.append("  (B status read skipped: BUSY)")
+        log.append(f"  After init: A status=0x{sa0:02X} B status=0x{sb0:02X} (expect 0x02=STBY_XOSC)")
         log.append("")
+
+        # Re-init B so it's idle after A's SPI traffic (shared bus can glitch B)
+        radio_b.reset()
+        if not radio_b.wait_busy(timeout_ms=2000):
+            log.append("Module B: BUSY timeout after re-reset.")
+        radio_b.init_lora(freq_hz=args.freq, payload_len=PAYLOAD_LEN)
+        radio_b._close_spi()
 
         # B enters RX first; then A sends ping.
         log.append("Module B: entering RX...")
@@ -121,12 +151,19 @@ def main() -> int:
 
         log.append("Module A: sending 'ping'...")
         t0 = time.monotonic()
+        radio_a.clear_error()
         radio_a.clear_irq()
         radio_a.write_buffer(0, PING)
         radio_a.start_tx()
+        time.sleep(0.1)  # let chip transition STBY_XOSC -> FS -> TX
+        sa, sb = radio_a.get_status(), radio_b.get_status()
+        log.append(f"  After SetTx: A status=0x{sa:02X} B status=0x{sb:02X} (0x02=STBY_XOSC 0x20=TX 0x30=RX)")
         if not radio_a.wait_tx_done(timeout_ms=5000):
             log.append("Module A: TX failed (no TxDone).")
-            log.append(f"  Module A IRQ=0x{radio_a.get_irq():04X} status=0x{radio_a.get_status():02X} error=0x{radio_a.get_error():04X}")
+            err = radio_a.get_error()
+            log.append(f"  Module A IRQ=0x{radio_a.get_irq():04X} status=0x{radio_a.get_status():02X} error=0x{err:04X}")
+            if err:
+                log.append(f"  Error bits: {', '.join(decode_device_error(err))}")
             success = False
         else:
             radio_a._rf_sw_rx()

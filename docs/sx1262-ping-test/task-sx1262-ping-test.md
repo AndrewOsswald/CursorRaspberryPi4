@@ -17,15 +17,32 @@
 
 ## In progress
 
-- **Ping test:** Code is in place (`sx1262_driver.py`, `test_ping.py`); run `python3 sx1262_gpio_test/test_ping.py`. Currently fails (chip does not leave STBY_RC on SetTx/SetRx). See `docs/sx1262-ping-test/PING_TEST_SUMMARY.md` for summary and next steps (CE mapping, init order, ref code).
+- **Ping test:** Run `python3 sx1262_gpio_test/test_ping.py` on the Pi. Test reaches “Module A: sending 'ping'…” then **TX fails (no TxDone)**, **error = 0x200A**, status 0xAA. See **“Context for next session”** below and `PING_TEST_SUMMARY.md`.
+
+---
+
+## Context for next session
+
+**Start here in a new chat:** Read `docs/intro.md`, then this task doc and `feature.md`, then `PING_TEST_SUMMARY.md` and `DATASHEET_AND_AN_NOTES.md` in this folder. **Terminal runs on the Pi** (intro.md Execution environment); run `python3 sx1262_gpio_test/test_ping.py` on the Pi to reproduce.
+
+**What’s done:** NSS wiring was wrong (user fixed: Module A = CE0, B = CE1). SPI test passes (A 0xAA, B 0x00). Ping test flow: reset both → wait BUSY → init **B first**, then A → re-init B before RX → A clear_error, write buffer, start_tx. Driver: STBY_XOSC, SetTcxoMode with **delay 320** (5 ms, 15.625 µs units), **ClearDeviceErrors** right after SetStandby(0x01) in init_lora (XOSC_START_ERR at POR expected), ClearDeviceErrors payload **0x00, 0x00**, SetStandby before SetTx, 10 dBm, clear_error(), BUSY retry. **decode_device_error()** added; test logs error bits on TX failure. Datasheet/AN excerpts are in `DATASHEET_AND_AN_NOTES.md` (PDFs removed). Forum/post references and “obvious solutions” are in `PING_TEST_SUMMARY.md`.
+
+**Current failure:** Module A never gets TxDone. **Error = 0x200A** decodes to **RC13M_CALIB_ERR, ADC_CALIB_ERR** — block calibration (Calibrate 0x7F) fails on the chip.
+
+**What we learned:** Arduino/RadioLib (begin + startTransmit) works on similar hardware, so the chip can work. Driver is RadioLib-aligned: retry Standby after reset; TCXO then config; CalibrateImage with **2-byte** band params (868: 0xD7,0xDB; 915: 0xE1,0xE9); ClearDeviceErrors 0x00,0x00; regulator before STBY_XOSC. Many variants tried without PASS. See PING_TEST_SUMMARY.md **"What we learned (for next session)"** for full list.
+
+**Next to try:** (1) **Hardware:** 50 Ω antennas on both modules; power quality; run with **one module only (A)** to rule out SPI contention. (2) Run a **known-good stack** (RadioLib or Semtech ref) on the same Pi + modules; if it works, diff our init. (3) **Ref:** RadioLib `SX126x::modSetup()`, `config()`, `findChip()` in jgromes/RadioLib src/modules/SX126x/.
 
 ---
 
 ## Completed
 
+- **Cleanup handoff:** Docs updated for next session: PING_TEST_SUMMARY.md has **"What we learned (for next session)"** (Arduino works so chip can work; CalibrateImage 2 bytes; RadioLib order; what didn't fix it; next directions). Task and feature docs point to it. Driver state: RadioLib-aligned init, CalibrateImage 0xD7/0xDB (868) or 0xE1/0xE9 (915), regulator before XOSC.
+- **Calibration from STBY_RC, 915 MHz, RadioLib:** init_lora now does SetStandby(0x00) before Calibrate/CalibrateImage, then SetStandby(0x01) after (datasheet: Calibrate from STDBY_RC). Ran ping at 868 and 915 MHz — both FAIL, same error bits (RC13M_CALIB_ERR, ADC_CALIB_ERR). RadioLib comparison noted in PING_TEST_SUMMARY and DATASHEET_AND_AN_NOTES.
+- **Error decode and ClearDeviceErrors fix:** ClearDeviceErrors payload set to 0x00,0x00 (datasheet 13.6). init_lora clears device errors immediately after SetStandby(0x01) to clear expected XOSC_START_ERR at POR. Added decode_device_error() in driver; test_ping logs "Error bits: …" on TX failure. Docs updated (DATASHEET_AND_AN_NOTES, PING_TEST_SUMMARY, feature, task).
 - **Ping test implemented and documented:** LoRa driver and `test_ping.py` (A→B ping, B→A pong); summary in `docs/sx1262-ping-test/PING_TEST_SUMMARY.md`. Test currently fails (mode-change commands not taking effect); doc lists next steps.
 - **SPI test verified on hardware:** Ran `test_spi.py` on Pi after enabling SPI and reboot. Module A and Module B both returned GetStatus 0x00 (ChipMode STBY_RC). Both modules are reachable over SPI.
-- **SPI test added:** `test_spi.py` sends GetStatus (0xC0) to both modules; waits BUSY before/after transfer; uses spidev0.0 / spidev0.1. Detailed explanation in `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`. (Run on Pi with SPI enabled; this environment has no /dev/spidev.)
+- **SPI test added:** `test_spi.py` sends GetStatus (0xC0) to both modules; waits BUSY before/after transfer; uses spidev0.0 / spidev0.1. Detailed explanation in `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`. (Run on Pi with SPI enabled; terminal is on Pi per intro.md.)
 - **GPIO connection test:** Added `sx1262_gpio_test/` at repo root (see `feature.md`). Script resets both modules via NRST, drives RF_SW, reads BUSY and DIO1; both modules reported BUSY low after reset on Pi — wiring likely OK for SPI.
 - Created feature folder and docs (`feature.md`, task doc, `wio-sx1262-module.md`, `wiring.md`).
 - Documented Wio-SX1262 module (pinout, BUSY/DIO1/RF_SW/TCXO, reference design) in `wio-sx1262-module.md`.

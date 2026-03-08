@@ -40,6 +40,7 @@ docs/
     wiring.md
     SPI_TEST_EXPLAINED.md
     PING_TEST_SUMMARY.md
+    DATASHEET_AND_AN_NOTES.md
 ```
 
 (Feature folders added under `docs/` as needed; user gives task doc path when starting a chat.)

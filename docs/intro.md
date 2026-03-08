@@ -23,6 +23,10 @@ You have no prior context. **Read in order:** (1) task doc — path from user or
 - **As you work,** try to update feature docs and task docs at each step: when you change wiring, code, or complete a step, update the relevant feature doc (active state) and task doc (Planned / In progress / Completed) so they stay accurate. When you install or remove software or change the layout under `docs/`, update `docs/system-environment.md` or `docs/docs-index.md` as needed.
 - **Final pass:** When the user asks you to clean up (e.g. "clean up according to cleanup.md"), follow **`docs/cleanup.md`**: review work done, update feature and task docs, update env and index if needed, then push to the task’s branch.
 
+## Execution environment
+
+- **Terminal runs on the Pi.** The agent’s shell is SSH’d into the Raspberry Pi. Commands you run in the terminal execute on the Pi; hardware (e.g. `/dev/spidev`, GPIO) is available there when enabled. You can run SPI tests, ping tests, and other hardware scripts directly.
+
 ## Paths
 
 - Repo root = project root. `docs/` contains: intro.md, new.md, docs-index.md, system-environment.md, cleanup.md, setup.md, template-new-feature/, and one folder per feature (each with feature.md plus zero or more other docs and one or more task-<slug>.md). Code/config paths come from the task doc, feature doc, or repo.
