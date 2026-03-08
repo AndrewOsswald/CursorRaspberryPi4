@@ -36,6 +36,8 @@ docs/
   sx1262-ping-test/
     feature.md
     task-sx1262-ping-test.md
+    wio-sx1262-module.md
+    wiring.md
 ```
 
 (Feature folders added under `docs/` as needed; user gives task doc path when starting a chat.)

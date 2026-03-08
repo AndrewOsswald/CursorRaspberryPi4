@@ -10,20 +10,20 @@
 
 ## Planned
 
-- Get chip/module details from user (pins, SPI vs other interface, host, existing drivers or libraries).
-- Define wiring for two SX1262 modules to the host (e.g. one Pi): which GPIO/SPI/CS per chip, power, antenna.
 - Implement a ping test: one chip sends a ping packet; the other receives it and sends a reply; first chip receives the reply. Report success/failure (e.g. round-trip time or pass/fail).
-- Document wiring and usage in the feature doc (and deeper docs in this folder as needed).
+- Document code paths and usage in the feature doc when done.
 
 ---
 
 ## In progress
 
-- (nothing right now — documentation created; waiting on user’s chip details before implementation)
+- **Get SPI communication working** with both Wio-SX1262 modules on the Pi 4. Wiring is complete (see `wiring.md`). Software must: wait for BUSY low before/after each SPI transaction; drive NSS (CE0 for module A, CE1 for B); use RST for reset, RF_SW for RX/TX. Once the host can talk to both chips over SPI, implement the ping test. (User had difficulty with ESP32; Pi 4 + this wiring is the current setup.)
 
 ---
 
 ## Completed
 
-- Created feature folder `docs/sx1262-ping-test/` with `feature.md` and this task doc.
-- Documented the goal: test two SX1262 radios by pinging them off each other. Stopping after documentation; implementation to follow once chip details are provided.
+- Created feature folder and docs (`feature.md`, task doc, `wio-sx1262-module.md`, `wiring.md`).
+- Documented Wio-SX1262 module (pinout, BUSY/DIO1/RF_SW/TCXO, reference design) in `wio-sx1262-module.md`.
+- Defined and documented wiring for two modules to Pi 4 (pin tables, board labels for XIAO carrier, wire colors, step-by-step) in `wiring.md`.
+- **Wiring built:** two Wio-SX1262 for XIAO carriers on Pi 4 via breadboard; as-built notes (GND rail, grey/white for A/B DIO1 and RF_SW, kit antennas) in `wiring.md`.

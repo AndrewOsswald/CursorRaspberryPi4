@@ -13,12 +13,12 @@
 
 ## Active state
 
-Update this section as the feature changes (wiring, code paths, host setup, what’s working or broken). Chip-specific details (pins, SPI, host, libraries) will be filled in once provided.
+Update this section as the feature changes (wiring, code paths, host setup, what’s working or broken).
 
-- **Wiring:** Two Wio-SX1262 modules to Pi 4 GPIO: see **`wiring.md`** in this folder (SPI0 shared, CE0/CE1 for NSS, dedicated GPIOs per module for NRST, BUSY, DIO1, RF_SW).
-- **Code:** TBD — script or program that initiates ping from one chip and replies from the other; paths to be added here.
-- **Working:** (none yet)
-- **Not working / limitations:** Feature not implemented yet; documentation only.
+- **Wiring:** **Done.** Two **Wio-SX1262 for XIAO** carrier boards wired to Pi 4 per **`wiring.md`** (SPI0 shared, CE0/CE1 for NSS; GPIOs per module for RST, BUSY, DIO1, RF_SW; breadboard, wire colors as built). Module labels used: 3V3, GND, MOSI, MISO, SCK, NSS, RST, BUSY, DIO1, RF_SW, DO. Antennas on DO.
+- **Code:** None yet. Next: bring up SPI (wait BUSY, drive NSS, reset via RST; see `wiring.md` Software notes and `wio-sx1262-module.md`), then implement ping (one chip sends, other replies, first receives).
+- **Working:** Hardware wired; SPI and ping not yet verified.
+- **Not working / limitations:** Chips have not been confirmed talking over SPI (user had trouble on ESP32; Pi 4 chosen as host; wiring complete, software next).
 
 ---
 
