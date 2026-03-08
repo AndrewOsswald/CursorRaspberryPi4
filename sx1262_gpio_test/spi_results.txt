@@ -1,0 +1,29 @@
+=== SX1262 SPI test (GetStatus 0xC0) ===
+
+Error: [Errno 2] No such file or directory
+Traceback (most recent call last):
+  File "/home/mochi/sandbox/NewCursorProject/sx1262_gpio_test/test_spi.py", line 159, in main
+    ok_a = test_module_spi("Module A", MODULE_A, "/dev/spidev0.0", log)
+  File "/home/mochi/sandbox/NewCursorProject/sx1262_gpio_test/test_spi.py", line 130, in test_module_spi
+    status_byte, msg = get_status_spi(spi_path, busy, timeout_ms=READY_WAIT_MS)
+                       ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mochi/sandbox/NewCursorProject/sx1262_gpio_test/test_spi.py", line 91, in get_status_spi
+    spi.open(bus, dev)
+    ~~~~~~~~^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory
+
+=== SX1262 SPI test (GetStatus 0xC0) ===
+
+Error: /dev/spidev0.0 not found. Enable SPI (dtparam=spi=on) and reboot.
+=== SX1262 SPI test (GetStatus 0xC0) ===
+
+  Module A: GetStatus -> 0x00
+  Module A: ChipMode bits (6:5) = 0 (0=STBY_RC, 1=STBY_XOSC, 2=FS, 3=RX/TX)
+
+  Module B: GetStatus -> 0x00
+  Module B: ChipMode bits (6:5) = 0 (0=STBY_RC, 1=STBY_XOSC, 2=FS, 3=RX/TX)
+
+--- Summary ---
+  Module A: PASS
+  Module B: PASS
+Both modules responded over SPI.

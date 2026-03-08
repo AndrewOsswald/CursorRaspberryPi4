@@ -2,6 +2,8 @@
 
 **Humans:** When you’re done with a session, say e.g. “clean up according to cleanup.md” so the agent syncs docs and pushes to the task branch.
 
+**Purpose:** Review everything you’ve done and update the docs so that **a new agent (or a new chat) can pick up where you left off** with no missing context. The task doc, feature doc, env, index, and README should together tell the full story of the current state.
+
 When the user says to clean up according to this file, run through the steps below. This is a final pass to catch anything that wasn’t updated during the session. During normal work, the agent should already be updating docs as it goes (see intro); this file is for an explicit cleanup at the end.
 
 ---
@@ -24,7 +26,8 @@ When the user says to clean up according to this file, run through the steps bel
 - **Review whether anything changed that affects the rest of the project:**
   - **Software installed or removed** (system packages, pip, tools like git/gh): update `docs/system-environment.md` (e.g. Software reference table, versions).
   - **Folder or file structure under `docs/`** (new feature folder, new doc, renamed or removed doc): update `docs/docs-index.md` (Core docs table if a new top-level doc was added, **Current structure** tree so it lists all existing `docs/` contents).
-- **Apply those updates** so the env file and the index accurately describe the current system and doc layout.
+  - **README** (project root): if the project scope, how to use the docs, or how to run/use the project has changed, update the README so it still accurately describes the project and the doc system.
+- **Apply those updates** so the env file, the index, and the README (if needed) accurately describe the current system and project.
 
 ---
 
@@ -38,4 +41,4 @@ When the user says to clean up according to this file, run through the steps bel
 
 ## 4. Done
 
-- When steps 1–3 are done, documentation and the index/env are in sync and the task branch has been pushed. Confirm briefly to the user what you updated and that you pushed to the branch.
+- When steps 1–3 are done, documentation (including the README if updated), the index, and the env file are in sync and the task branch has been pushed. A new agent reading intro plus the task doc and feature doc should have everything needed to continue. Confirm briefly to the user what you updated and that you pushed to the branch.

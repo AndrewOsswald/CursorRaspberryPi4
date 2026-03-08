@@ -16,9 +16,9 @@
 Update this section as the feature changes (wiring, code paths, host setup, what’s working or broken).
 
 - **Wiring:** **Done.** Two **Wio-SX1262 for XIAO** carrier boards wired to Pi 4 per **`wiring.md`** (SPI0 shared, CE0/CE1 for NSS; GPIOs per module for RST, BUSY, DIO1, RF_SW; breadboard, wire colors as built). Module labels used: 3V3, GND, MOSI, MISO, SCK, NSS, RST, BUSY, DIO1, RF_SW, DO. Antennas on DO.
-- **Code:** None yet. Next: bring up SPI (wait BUSY, drive NSS, reset via RST; see `wiring.md` Software notes and `wio-sx1262-module.md`), then implement ping (one chip sends, other replies, first receives).
-- **Working:** Hardware wired; SPI and ping not yet verified.
-- **Not working / limitations:** Chips have not been confirmed talking over SPI (user had trouble on ESP32; Pi 4 chosen as host; wiring complete, software next).
+- **Code:** **`sx1262_gpio_test/`** at repo root: (1) **GPIO test** — `test_connection.py`. (2) **SPI test** — `test_spi.py`; see `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`. (3) **Ping test** — `sx1262_driver.py` (LoRa init/TX/RX) and `test_ping.py` (A sends ping, B replies pong); see `docs/sx1262-ping-test/PING_TEST_SUMMARY.md`.
+- **Working:** Hardware wired; GPIO test passed; SPI test passed (both modules GetStatus 0x00).
+- **Not working / limitations:** Ping test implemented but currently fails — SetTx/SetRx do not change chip mode (status stays STBY_RC). See PING_TEST_SUMMARY.md for details and next steps.
 
 ---
 
@@ -26,6 +26,8 @@ Update this section as the feature changes (wiring, code paths, host setup, what
 
 - **`wio-sx1262-module.md`** — Wio-SX1262 module description: pinout, SPI/BUSY/DIO1/RF_SW, TCXO and DIO3, RF switch and DIO2, electrical specs, reference design for connecting to an MCU, and variants (IPEX vs -N).
 - **`wiring.md`** — Wiring two Wio-SX1262 modules to a Raspberry Pi 4: pin table, step-by-step procedure, safety, SPI enable, and software notes (BUSY, NSS, NRST, RF_SW).
+- **`SPI_TEST_EXPLAINED.md`** — What the SPI test does (GetStatus 0xC0), BUSY/NSS discipline, and how to interpret results.
+- **`PING_TEST_SUMMARY.md`** — Ping test flow, where the code lives, how to run it, current result (FAIL: SetTx/SetRx not changing mode), and next steps for a new agent.
 
 ---
 
