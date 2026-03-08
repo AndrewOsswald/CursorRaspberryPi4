@@ -27,7 +27,7 @@
 
 ## 1. SetDIO3AsTCXOCtrl (SetTcxoMode) — SX1262 datasheet Section 13.3.6
 
-- **Opcode:** 0x97  
+- **Opcode:** 0x97
 - **SPI transaction:** Byte 0 = 0x97, Byte 1 = tcxoVoltage, Bytes 2–4 = delay(23:0) (3 bytes, MSB first).
 
 **tcxoVoltage (Byte 1):**
@@ -49,10 +49,10 @@ Regulation is 200 mV below supply: VDDop > VTCXO + 200 mV.
 
 - **Duration = Delay(23:0) × 15.625 µs.**
 - If delay is **0**, the chip does **not** wait for the TCXO; the 32 MHz is not gated. If the 32 MHz from the TCXO is not detected at the end of the delay period, the error **XOSC_START_ERR** is flagged.
-- Datasheet: *“The time needed for the 32 MHz to appear and stabilize can be controlled through the parameter delay(23:0).”* *“Most TCXO will not be immediately ready … the delay value will internally gate the 32 MHz coming from the TCXO to give enough time for this initial drift to stabilize.”*
-- **Note:** *“The user should take the delay period into account when going into Tx or Rx mode from STDBY_RC mode. … To avoid increasing the switching mode time, the user can first set the device in STDBY_XOSC which will switch on the TCXO and wait for the delay period. Then, the user can set the device into Tx or Rx mode without suffering from any delay additional to the internal processing.”*
+- Datasheet: *"The time needed for the 32 MHz to appear and stabilize can be controlled through the parameter delay(23:0)."* *"Most TCXO will not be immediately ready … the delay value will internally gate the 32 MHz coming from the TCXO to give enough time for this initial drift to stabilize."*
+- **Note:** *"The user should take the delay period into account when going into Tx or Rx mode from STDBY_RC mode. … To avoid increasing the switching mode time, the user can first set the device in STDBY_XOSC which will switch on the TCXO and wait for the delay period. Then, the user can set the device into Tx or Rx mode without suffering from any delay additional to the internal processing."*
 
-**XOSC_START_ERR at POR:** *“The XOSC_START_ERR flag will be raised at POR or at wake-up from Sleep mode in a cold-start condition, when a TCXO is used. It is an expected behaviour since the chip is not yet aware of being clocked by a TCXO. The user should simply clear this flag with the ClearDeviceErrors command.”*
+**XOSC_START_ERR at POR:** *"The XOSC_START_ERR flag will be raised at POR or at wake-up from Sleep mode in a cold-start condition, when a TCXO is used. It is an expected behaviour since the chip is not yet aware of being clocked by a TCXO. The user should simply clear this flag with the ClearDeviceErrors command."*
 
 ---
 
@@ -91,22 +91,22 @@ Interpretation of a 16-bit error value (e.g. 0x0A20 or 0x200A depending on byte 
 
 After power up or hard reset the chip is in STDBY_RC (BUSY low). Steps for basic Tx:
 
-1. If not in STDBY_RC: SetStandby(0x00).  
-2. SetPacketType (LoRa or FSK).  
-3. SetRfFrequency.  
-4. SetPaConfig.  
-5. SetTxParams (power, ramp time).  
-6. SetBufferBaseAddress.  
-7. WriteBuffer (payload).  
-8. SetModulationParams.  
-9. SetPacketParams.  
-10. SetDioIrqParams (e.g. TxDone on DIO1).  
-11. WriteReg (sync word if needed).  
-12. SetTx (with timeout param).  
-13. Wait for IRQ TxDone or timeout; then chip goes to STDBY_RC.  
+1. If not in STDBY_RC: SetStandby(0x00).
+2. SetPacketType (LoRa or FSK).
+3. SetRfFrequency.
+4. SetPaConfig.
+5. SetTxParams (power, ramp time).
+6. SetBufferBaseAddress.
+7. WriteBuffer (payload).
+8. SetModulationParams.
+9. SetPacketParams.
+10. SetDioIrqParams (e.g. TxDone on DIO1).
+11. WriteReg (sync word if needed).
+12. SetTx (with timeout param).
+13. Wait for IRQ TxDone or timeout; then chip goes to STDBY_RC.
 14. Clear IRQ TxDone.
 
-**Command order (Section 14.4):** SetPacketType **must** be the **first** radio configuration command. Then SetModulationParams, then SetPacketParams. *“If this order is not respected, the behaviour of the device could be unexpected.”*
+**Command order (Section 14.4):** SetPacketType **must** be the **first** radio configuration command. Then SetModulationParams, then SetPacketParams. *"If this order is not respected, the behaviour of the device could be unexpected."*
 
 ---
 
@@ -114,7 +114,7 @@ After power up or hard reset the chip is in STDBY_RC (BUSY low). Steps for basic
 
 - **SetRegulatorMode (0x96):** 0 = LDO only; 1 = DC_DC+LDO for STBY_XOSC, FS, RX, TX. Wio module uses DC-DC.
 - **Calibrate (0x89):** Must be launched from **STDBY_RC**. BUSY high during calibration. Total time for all blocks **3.5 ms**. **Semtech SX126xLib Init()** runs **Calibrate(0x7F) right after SetStandby(STDBY_RC) and SetDio3AsTcxoCtrl**, with **no** SetPacketType or SetRfFrequency before it. If RC13M_CALIB_ERR/ADC_CALIB_ERR occur, run Calibrate (and CalibrateImage) before any packet type or RF frequency configuration.
-- **CalibrateImage (0x98):** Takes **2 bytes** (band coefficients). 863–870 MHz: **0xD7, 0xDB**; 902–928 MHz: **0xE1, 0xE9** (both odd). Band-dependent; see “Image Calibration for Specific Frequency Bands” in datasheet.
+- **CalibrateImage (0x98):** Takes **2 bytes** (band coefficients). 863–870 MHz: **0xD7, 0xDB**; 902–928 MHz: **0xE1, 0xE9** (both odd). Band-dependent; see "Image Calibration for Specific Frequency Bands" in datasheet.
 - **GetStatus (0xC0):** Returns 1 byte (Status). Used to read chip mode and command status.
 
 ---

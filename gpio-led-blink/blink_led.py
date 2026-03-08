@@ -2,7 +2,7 @@
 """
 Blink an LED on GPIO 17 (BCM) at 1 Hz.
 Wiring: LED anode → 330 Ω resistor → GPIO 17 (physical pin 11). LED cathode → GND.
-Run: python3 scripts/blink_led.py  (stop with Ctrl+C)
+Run: python3 gpio-led-blink/blink_led.py  (stop with Ctrl+C)
 """
 from gpiozero import LED
 from signal import pause

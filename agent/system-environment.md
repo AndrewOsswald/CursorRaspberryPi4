@@ -1,15 +1,15 @@
-# system-environment.md — hardware and software baseline
+# system-environment.md — run environment (this project)
 
-Use this file when the task involves hardware, GPIO, pinout, 3.3V constraints, config path, or interfaces (GPIO/I2C/SPI/UART). Do not guess; read the values here. *(Regenerate via `docs/setup.md` when moving to a new machine.)*
+**For agents:** This file describes the **run environment** for this project—e.g. laptop, server, container, or embedded host. Use it when the WIP involves host, hardware, interfaces, or config. Do not guess; read the values here. *(Regenerate via `agent/setup.md` when moving to a new machine or run target.)*
 
-## Critical constraints (don’t violate)
+## Critical constraints (don't violate)
 
 - **GPIO logic level:** 3.3 V only. GPIO pins are **not** 5 V tolerant; connecting 5 V to a pin can damage the SoC.
 - **Power pins:** 3.3 V (pin 1, 17) and 5 V (2, 4) are output only. GND: 6, 9, 14, 20, 25, 30, 34, 39.
 - **Current:** Per-pin max ~16 mA; total from all 3.3 V pins within board limits. Use external drivers for higher current or 5 V logic.
 - **Boot / special pins:** Avoid GPIO 3 (I2C SDA), 5 (I2C SCL), 27 (EEPROM ID) for unrelated outputs. Prefer other GPIO for generic outputs.
 
-**Best practices (Pi GPIO):** Release GPIO on exit (set to input or close handle) so pins aren’t left driving or floating. Set pull-up/pull-down for inputs (e.g. buttons) so state isn’t undefined. Don’t connect or disconnect wires while a pin is active—power off or set pin to input first. Only one process should control a given GPIO at a time. Prefer gpiozero or rpi-lgpio (installed); avoid legacy RPi.GPIO on this OS.
+**Best practices (Pi GPIO):** Release GPIO on exit (set to input or close handle) so pins aren't left driving or floating. Set pull-up/pull-down for inputs (e.g. buttons) so state isn't undefined. Don't connect or disconnect wires while a pin is active—power off or set pin to input first. Only one process should control a given GPIO at a time. Prefer gpiozero or rpi-lgpio (installed); avoid legacy RPi.GPIO on this OS.
 
 ## Config path
 

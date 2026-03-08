@@ -5,7 +5,7 @@ SPI connection test for two Wio-SX1262 modules on a Raspberry Pi 4.
 Sends the SX1262 GetStatus command (0xC0) to each module and reads the
 1-byte response. Confirms that SPI and the BUSY/NSS discipline work.
 
-Protocol (per docs/sx1262-ping-test/wiring.md and SX1262 datasheet):
+Protocol (per sx1262_gpio_test/context/wiring.md and SX1262 datasheet):
   - Wait until BUSY is low before any SPI transaction.
   - Assert NSS (chip select) low; send 0xC0; receive 1 byte; release NSS.
   - Wait until BUSY is low again before next command.

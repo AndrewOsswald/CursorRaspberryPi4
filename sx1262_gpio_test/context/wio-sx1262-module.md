@@ -1,8 +1,8 @@
 # Wio-SX1262 module — description and operation
 
-**Purpose:** Describes the Wio-SX1262 module (not just the bare SX1262 IC): what’s on the module, pinout, interfaces, and how to connect it to a host MCU. For feature context see `feature.md` in this folder.
+**Purpose:** Describes the Wio-SX1262 module (not just the bare SX1262 IC): what's on the module, pinout, interfaces, and how to connect it to a host MCU. For module context see `../README.md` in the parent folder.
 
-**Audience:** Humans and AI. Use this when wiring or writing software for the ping test or any feature using this module.
+**Audience:** Humans and AI. Use this when wiring or writing software for the ping test or any module using this hardware.
 
 ---
 
@@ -11,11 +11,11 @@
 The **Wio-SX1262** is a compact RF module from Seeed Studio built around the **Semtech SX1262** sub‑GHz transceiver IC. The module adds:
 
 - **Power:** DC-DC power distribution (not LDO), so it can deliver high TX current efficiently.
-- **Frequency reference:** A high-precision active **TCXO**; its supply is controlled by the SX1262’s DIO3 (see below).
-- **RF path:** Internal RF switch (gate) for TX/RX; control is exposed as **RF_SW** and is tied to the IC’s DIO2 behavior.
+- **Frequency reference:** A high-precision active **TCXO**; its supply is controlled by the SX1262's DIO3 (see below).
+- **RF path:** Internal RF switch (gate) for TX/RX; control is exposed as **RF_SW** and is tied to the IC's DIO2 behavior.
 - **RF port:** 50 Ω interface — either **IPEX** connector (Wio-SX1262) or **SMT pin** (Wio-SX1262-N). A π-type matching network is recommended on the host board for antenna tuning.
 
-So “how it works” is: host talks to the SX1262 over **SPI**; drives **NRST**, **RF_SW**, and watches **BUSY** and **DIO1**; the module handles DC-DC, TCXO, and the internal RF switch so you get a clean 862–930 MHz (HF band) LoRa/FSK radio with up to 22 dBm output.
+So "how it works" is: host talks to the SX1262 over **SPI**; drives **NRST**, **RF_SW**, and watches **BUSY** and **DIO1**; the module handles DC-DC, TCXO, and the internal RF switch so you get a clean 862–930 MHz (HF band) LoRa/FSK radio with up to 22 dBm output.
 
 ---
 
@@ -49,7 +49,7 @@ So “how it works” is: host talks to the SX1262 over **SPI**; drives **NRST**
 
 **Note on DIO2 / DIO3 (internal to the IC, not brought out as separate pins):**
 
-- **DIO2** is internally connected to the RF switch (logic high = transmitter mode; otherwise low). The module exposes **RF_SW** for external control of the same switch (high = RX). So RX/TX path selection is either via RF_SW or via the IC’s DIO2 configuration.
+- **DIO2** is internally connected to the RF switch (logic high = transmitter mode; otherwise low). The module exposes **RF_SW** for external control of the same switch (high = RX). So RX/TX path selection is either via RF_SW or via the IC's DIO2 configuration.
 - **DIO3** is used as the **TCXO voltage supply** output. It must be enabled and configured in software; TCXO voltage should be **200 mV below VCC** for proper operation. Typical TCXO supply range: 1.7–3.3 V.
 
 ---
@@ -84,7 +84,7 @@ So “how it works” is: host talks to the SX1262 over **SPI**; drives **NRST**
 
 ## Reference design: connecting to an MCU
 
-A typical reference design (e.g. “Figure 10 Reference Design Based on Wio-SX1262” in the module documentation) connects the Wio-SX1262 to a host MCU as follows. The antenna interface uses 50 Ω impedance with a recommended π-type matching network (series inductor, shunt capacitors to GND) to an antenna connector.
+A typical reference design (e.g. "Figure 10 Reference Design Based on Wio-SX1262" in the module documentation) connects the Wio-SX1262 to a host MCU as follows. The antenna interface uses 50 Ω impedance with a recommended π-type matching network (series inductor, shunt capacitors to GND) to an antenna connector.
 
 **MCU → Module:**
 
@@ -98,7 +98,7 @@ A typical reference design (e.g. “Figure 10 Reference Design Based on Wio-SX12
 | SPI_NSS    | 6 (NSS)    | SPI chip select                        |
 | DIO        | 12 (DIO1)  | IRQ / multi-purpose                    |
 | BUSY       | 11 (BUSY)  | Busy indicator (read before/after SPI) |
-| IO         | 1 (RF_SW)  | RF switch control (high = RX)          |
+| IO         | 1 (RF_SW)  | RF switch control (high = RX)         |
 
 
 **Power and RF:**
@@ -137,5 +137,4 @@ Both support 862–930 MHz and 22 dBm in that band.
 
 - Semtech SX1262 datasheet (SPI, BUSY, DIO1/DIO2/DIO3, command set).
 - Seeed Studio Wio-SX1262 product page and wiki for module-specific specs and reference schematic.
-- `docs/system-environment.md` for host pinout (e.g. Pi SPI/GPIO) when wiring two modules to one host.
-
+- `agent/system-environment.md` for host pinout (e.g. Pi SPI/GPIO) when wiring two modules to one host.

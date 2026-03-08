@@ -2,7 +2,7 @@
 
 **Purpose:** Connect both Wio-SX1262 modules to the same Pi 4 over SPI so you can get them talking (and later run the ping test from one host). Each module gets its own chip select (NSS) and its own GPIOs for NRST, BUSY, DIO1, and RF_SW.
 
-**Hardware context:** Pi 4 pinout and 3.3 V constraints in `docs/system-environment.md`. Module pinout in `wio-sx1262-module.md` in this folder.
+**Hardware context:** Pi 4 pinout and 3.3 V constraints in `agent/system-environment.md`. Module pinout in `wio-sx1262-module.md` in this folder.
 
 **Current state (for agent handoff):** Wiring has been **built** as described in this doc. Hardware in use: **two Wio-SX1262 for XIAO** carrier boards (labels on back: 3V3, GND, MOSI, MISO, SCK, NSS, RST, BUSY, DIO1, RF_SW, DO), **Raspberry Pi 4**, breadboard with shared GND rail. Wire colors as documented (red/black power; orange/yellow/green SPI; blue/grey for Module A control; violet/white for Module B control). Antennas: kit stick-on antennas on each module **DO**. The next step is **software**: get SPI communication working (respect BUSY, NSS, RST; see Software notes and `wio-sx1262-module.md`), then implement the ping test. User had difficulty getting the chips to talk over SPI on ESP32; Pi 4 wiring was done to try that host instead.
 
@@ -19,8 +19,8 @@ Yes. The Pi 4 has **SPI0** with two chip-select outputs (CE0 and CE1). You share
 - **Power off the Pi** (shutdown, then unplug power) before connecting or changing any wires. Do not hot-plug the modules.
 - **3.3 V only.** Pi GPIO and the modules are 3.3 V. Do not connect 5 V to any module pin or GPIO; it can damage the Pi and the module.
 - **Polarity:** Double-check VCC and GND. Reversed power can damage the module.
-- **Current:** Each module can draw up to ~125 mA when transmitting. Both on Pi 3.3 V is OK for normal use (e.g. one TX at a time). If you stress-test with both transmitting at once, the Pi’s 3.3 V rail may be marginal; use an external 3.3 V supply for the radios if you see brownouts.
-- **Connect GND first** between Pi and each module, then power and signals, so you don’t float signals during wiring.
+- **Current:** Each module can draw up to ~125 mA when transmitting. Both on Pi 3.3 V is OK for normal use (e.g. one TX at a time). If you stress-test with both transmitting at once, the Pi's 3.3 V rail may be marginal; use an external 3.3 V supply for the radios if you see brownouts.
+- **Connect GND first** between Pi and each module, then power and signals, so you don't float signals during wiring.
 
 ---
 
@@ -94,7 +94,7 @@ Use the same color for each signal so you can trace and debug easily. Suggested 
 | **White**         | Module B — DIO1, RF_SW (as built)                         |
 
 
-As built: **grey** was used for Module A DIO1 and RF_SW, **white** for Module B DIO1 and RF_SW, so those four wires are easy to tell apart from the blue/violet RST and BUSY wires. Label the ends (e.g. tape + marker: “A-RST”, “B-BUSY”) if needed.
+As built: **grey** was used for Module A DIO1 and RF_SW, **white** for Module B DIO1 and RF_SW, so those four wires are easy to tell apart from the blue/violet RST and BUSY wires. Label the ends (e.g. tape + marker: "A-RST", "B-BUSY") if needed.
 
 ---
 
@@ -106,49 +106,49 @@ As built: **grey** was used for Module A DIO1 and RF_SW, **white** for Module B 
 
 **2. On each module, find the labeled pads/headers** on the back: **3V3**, **GND**, **MOSI**, **MISO**, **SCK**, **NSS**, **RST**, **BUSY**, **DIO1**, **RF_SW**, **DO**.
 
-**3. Connect grounds first (black).**  
+**3. Connect grounds first (black).**
 
 Each module has one **GND** pad. Use a breadboard: run **black** from Pi physical pin 6 (GND) and Pi pin 14 (GND) to one shared GND rail, then Module A **GND** and Module B **GND** to that same rail. (Pi pins 9 and 20 are other GND options; the XIAO carrier does not have a second GND pad per module.)
 
-**4. Connect 3.3 V (red).**  
+**4. Connect 3.3 V (red).**
 
-- **Red:** Pi physical pin 1 (3.3 V) → Module A **3V3**.  
-- **Red:** Pi physical pin 17 (3.3 V) → Module B **3V3**.  
+- **Red:** Pi physical pin 1 (3.3 V) → Module A **3V3**.
+- **Red:** Pi physical pin 17 (3.3 V) → Module B **3V3**.
 (Use **3V3** only—not VIN—when powering from the Pi.)
 
-**5. Connect shared SPI (orange, yellow, green — to both modules).**  
+**5. Connect shared SPI (orange, yellow, green — to both modules).**
 
-- **Orange:** Pi pin 19 (GPIO 10, MOSI) → Module A **MOSI** and Module B **MOSI**.  
-- **Yellow:** Pi pin 21 (GPIO 9, MISO) → Module A **MISO** and Module B **MISO**.  
+- **Orange:** Pi pin 19 (GPIO 10, MOSI) → Module A **MOSI** and Module B **MOSI**.
+- **Yellow:** Pi pin 21 (GPIO 9, MISO) → Module A **MISO** and Module B **MISO**.
 - **Green:** Pi pin 23 (GPIO 11, SCLK) → Module A **SCK** and Module B **SCK**.
 
-**6. Connect chip select (NSS).**  
+**6. Connect chip select (NSS).**
 
-- **Blue:** Pi pin 24 (GPIO 8, CE0) → **only** Module A **NSS**.  
+- **Blue:** Pi pin 24 (GPIO 8, CE0) → **only** Module A **NSS**.
 - **Violet:** Pi pin 26 (GPIO 7, CE1) → **only** Module B **NSS**.
 
-**7. Connect Module A control pins (blue for RST/BUSY; grey for DIO1/RF_SW — label ends A-RST, A-BUSY, A-DIO1, A-RF_SW).**  
+**7. Connect Module A control pins (blue for RST/BUSY; grey for DIO1/RF_SW — label ends A-RST, A-BUSY, A-DIO1, A-RF_SW).**
 
-- **Blue:** Pi pin 11 (GPIO 17) → Module A **RST**.  
-- **Blue:** Pi pin 12 (GPIO 18) → Module A **BUSY**.  
-- **Grey:** Pi pin 15 (GPIO 22) → Module A **DIO1**.  
+- **Blue:** Pi pin 11 (GPIO 17) → Module A **RST**.
+- **Blue:** Pi pin 12 (GPIO 18) → Module A **BUSY**.
+- **Grey:** Pi pin 15 (GPIO 22) → Module A **DIO1**.
 - **Grey:** Pi pin 16 (GPIO 23) → Module A **RF_SW**.
 
-**8. Connect Module B control pins (violet for RST/BUSY; white for DIO1/RF_SW — label ends B-RST, B-BUSY, B-DIO1, B-RF_SW).**  
+**8. Connect Module B control pins (violet for RST/BUSY; white for DIO1/RF_SW — label ends B-RST, B-BUSY, B-DIO1, B-RF_SW).**
 
-- **Violet:** Pi pin 22 (GPIO 25) → Module B **RST**.  
-- **Violet:** Pi pin 29 (GPIO 5) → Module B **BUSY**.  
-- **White:** Pi pin 31 (GPIO 6) → Module B **DIO1**.  
+- **Violet:** Pi pin 22 (GPIO 25) → Module B **RST**.
+- **Violet:** Pi pin 29 (GPIO 5) → Module B **BUSY**.
+- **White:** Pi pin 31 (GPIO 6) → Module B **DIO1**.
 - **White:** Pi pin 32 (GPIO 12) → Module B **RF_SW**.
 
-**9. Antenna.**  
-Connect an antenna (or 50 Ω load) to each module’s **DO** (RF output). The XIAO kit includes a short, thin stick-on antenna (sticker-backed) per module—use that, or another 50 Ω antenna. Do not run the radios without an antenna or load; it can damage the PA.
+**9. Antenna.**
+Connect an antenna (or 50 Ω load) to each module's **DO** (RF output). The XIAO kit includes a short, thin stick-on antenna (sticker-backed) per module—use that, or another 50 Ω antenna. Do not run the radios without an antenna or load; it can damage the PA.
 
-**10. Double-check.**  
+**10. Double-check.**
 
-- No 5 V on any module or GPIO.  
-- All GNDs common.  
-- No shorts between pins.  
+- No 5 V on any module or GPIO.
+- All GNDs common.
+- No shorts between pins.
 - NSS/CE0 only to module A, NSS/CE1 only to module B.
 
 **11. Power on the Pi** and enable SPI if needed (see below).
@@ -168,9 +168,9 @@ Connect an antenna (or 50 Ω load) to each module’s **DO** (RF output). The XI
 ## Software notes (for when you add code)
 
 - **BUSY:** Before and after every SPI transaction to a module, read the BUSY GPIO for that module; only send a command when BUSY is low.
-- **NSS:** Drive the correct CE (8 for A, 7 for B) low for the module you’re talking to; leave the other high so only one module is selected.
+- **NSS:** Drive the correct CE (8 for A, 7 for B) low for the module you're talking to; leave the other high so only one module is selected.
 - **NRST:** Hold low for a few ms, then release (high) for a clean reset before init.
-- **RF_SW:** High = receiver mode; drive as needed for RX/TX (or match your driver’s expectations).
+- **RF_SW:** High = receiver mode; drive as needed for RX/TX (or match your driver's expectations).
 
 ---
 
@@ -190,5 +190,3 @@ Connect an antenna (or 50 Ω load) to each module’s **DO** (RF output). The XI
 | 25  | GND               | Black  | 26  | CE1 (B NSS)      | Violet |
 | 29  | GPIO 5 (B BUSY)   | Violet | 31  | GPIO 6 (B DIO1)  | White  |
 | 32  | GPIO 12 (B RF_SW) | White  |     |                  |        |
-
-

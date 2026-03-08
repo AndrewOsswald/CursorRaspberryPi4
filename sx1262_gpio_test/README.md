@@ -1,64 +1,82 @@
 # SX1262 connection tests (GPIO and SPI)
 
-**GPIO test:** Quick check that the Pi’s GPIO lines to both Wio-SX1262 modules are connected and that the chips respond after reset.
+This module tests two Wio-SX1262 sub‑GHz modules on a Raspberry Pi: a **GPIO test** (reset, BUSY, DIO1), a **SPI test** (GetStatus over SPI), and a **ping test** (LoRa A→B→A). For up-to-date state (wiring, what works, what doesn’t), see **`context/current-state.md`**.
 
-**SPI test:** Sends the SX1262 GetStatus command (0xC0) over SPI to each module and reads the response. Confirms SPI and BUSY/NSS discipline. See **`docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`** for a detailed description of the SPI test and what to expect.
+---
 
-## What it does
+## Project
 
-- **NRST:** Drives reset low for 10 ms then high. Both modules are reset.
-- **BUSY:** After reset, waits up to 150 ms for BUSY to go low. When the chip is idle it pulls BUSY low; if we see low, the BUSY wire and chip are likely OK.
-- **RF_SW:** Set high (receiver mode). Exercises the pin only.
-- **DIO1:** Read once after reset. Confirms we can read the line (chip drives it).
+This project is for experimenting with GPIO and interfacing with chips on a Raspberry Pi (e.g. Pi 4). The repo may have a single module or several; either is fine. This module adds SX1262 sub‑GHz radio tests (GPIO, SPI, LoRa ping) using two Wio-SX1262 modules.
 
-Pins are defined in `pin_config.py` from `docs/sx1262-ping-test/wiring.md` (BCM).
+---
 
-## Run on the Pi
+## Best practices
+
+When suggesting wiring or hardware steps: **(1) Wiring** — Spell out what to connect where (pin numbers, names), in what order (e.g. power off first, GND before signal). Do not assume prior experience. **(2) Safety** — Warn about risks (short circuits, 5 V on GPIO, hot-plugging, reversed polarity, current limits). State the risk and how to avoid it. For pinout and 3.3 V constraints, use **`agent/system-environment.md`**. **(3) SPI/hardware** — Respect BUSY and NSS discipline; wait for BUSY low before/after each SPI transfer. One process per module’s GPIOs. Antenna or 50 Ω load on each radio before TX. Release GPIOs on exit.
+
+---
+
+## Overview
+
+- **GPIO test** — Resets both modules via NRST, drives RF_SW, reads BUSY and DIO1. Confirms wiring and that the chips respond.
+- **SPI test** — Sends GetStatus (0xC0) to each module over SPI. Confirms SPI and BUSY/NSS discipline. See **`context/spi-test-explained.md`** for details.
+- **Ping test** — LoRa: Module A sends "ping", B receives and replies "pong", A receives. See **`context/ping-test-summary.md`** for flow and current result.
+
+Pins are defined in `pin_config.py` from **`context/wiring.md`** (BCM).
+
+---
+
+## How to run
+
+From the repo root, on a Pi with both modules wired per **`context/wiring.md`**:
+
+**GPIO test** (needs gpiozero):
 
 ```bash
-# From repo root
 python3 sx1262_gpio_test/test_connection.py
-
-# Append this run to a log file
 python3 sx1262_gpio_test/test_connection.py --output sx1262_gpio_test/results.txt
 ```
 
-Requires **gpiozero** and running on a Raspberry Pi with the two modules wired per `docs/sx1262-ping-test/wiring.md`. Exit code 0 if both modules’ BUSY went low; 1 otherwise.
-
-## SPI test (after GPIO test passes)
+**SPI test** (after GPIO test passes; needs spidev, SPI enabled):
 
 ```bash
 python3 sx1262_gpio_test/test_spi.py
 python3 sx1262_gpio_test/test_spi.py --output sx1262_gpio_test/spi_results.txt
 ```
 
-Requires **spidev** (`pip install spidev` if needed) and SPI enabled (`dtparam=spi=on`, reboot). See **`docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`** for a full explanation of what the test does and how to interpret results.
+See **`context/spi-test-explained.md`** for what the test does and how to interpret results.
 
-## Ping test (LoRa A→B→A)
+**Ping test** (LoRa A→B→A):
 
 ```bash
 python3 sx1262_gpio_test/test_ping.py
 python3 sx1262_gpio_test/test_ping.py --output sx1262_gpio_test/ping_results.txt
 ```
 
-See **`docs/sx1262-ping-test/PING_TEST_SUMMARY.md`** for flow, current result, and driver changes.
+See **`context/ping-test-summary.md`** for flow and current result.
 
-## Minimal status test (Module A only)
+**Minimal status test** (Module A only):
 
 ```bash
 python3 sx1262_gpio_test/test_status_minimal.py
 ```
 
-Resets Module A, runs full LoRa init, calls `start_tx()`, then prints GetStatus. Useful to check if one module ever leaves STBY_RC after SetTx.
+Resets Module A, runs full LoRa init, calls `start_tx()`, then prints GetStatus.
 
-## Files
+---
 
-- `pin_config.py` — BCM pin numbers for Module A and B (NRST, BUSY, DIO1, RF_SW).
-- `test_connection.py` — GPIO test; resets both modules and reads BUSY/DIO1.
-- `test_spi.py` — SPI test; sends GetStatus (0xC0) to each module and reads the status byte.
-- `sx1262_driver.py` — LoRa driver (init, TX, RX, IRQ, buffer).
-- `test_ping.py` — Ping test (A sends "ping", B replies "pong", A receives).
-- `test_status_minimal.py` — Module A only: reset → init_lora → start_tx → status.
-- `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md` — SPI test details.
-- `docs/sx1262-ping-test/PING_TEST_SUMMARY.md` — Ping test summary and next steps.
-- `results.txt` / `spi_results.txt` / `ping_results.txt` — Optional; created when you pass `--output ...`.
+## Deeper docs (in context/)
+
+- `context/current-state.md` — Current state (for agents): wiring, code, working, not working, refs.
+- `context/wip-sx1262-ping-test.md` — WIP progress and **Context for next session** handoff.
+- `context/ping-test-summary.md` — Ping test flow, current result, what we learned, next directions.
+- `context/spi-test-explained.md` — What the SPI test does and how to interpret GetStatus.
+- `context/wiring.md` — Pin table (Pi ↔ Module A/B), safety, as-built notes.
+- `context/wio-sx1262-module.md` — Module pinout and operation (TCXO, RF_SW, BUSY).
+- `context/datasheet-and-an-notes.md` — Datasheet/AN excerpts (commands, TCXO, calibration, errors).
+
+---
+
+## Related WIP doc(s)
+
+- `context/wip-sx1262-ping-test.md` — WIP progress for ping test (branch main--sx1262-ping-test).

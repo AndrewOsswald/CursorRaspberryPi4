@@ -16,7 +16,7 @@ Usage:
   python3 test_connection.py [--output FILE]
   If --output is given, appends a timestamped run to that file (e.g. results.txt).
 
-Requires: gpiozero, run on Pi with modules wired per docs/sx1262-ping-test/wiring.md.
+Requires: gpiozero, run on Pi with modules wired per sx1262_gpio_test/context/wiring.md.
 """
 
 from __future__ import annotations

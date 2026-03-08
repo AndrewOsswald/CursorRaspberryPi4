@@ -4,7 +4,7 @@ Ping test: Module A sends "ping", Module B receives and replies "pong", Module A
 
 Both modules are configured for LoRa (868 MHz, SF7, BW 125 kHz, 4-byte payload).
 Reports success/failure and round-trip time. Run on Pi with SPI enabled and
-both Wio-SX1262 modules wired per docs/sx1262-ping-test/wiring.md.
+both Wio-SX1262 modules wired per sx1262_gpio_test/context/wiring.md.
 """
 
 from __future__ import annotations

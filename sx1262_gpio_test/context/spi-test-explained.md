@@ -12,30 +12,30 @@ After the **GPIO test** (`test_connection.py`) confirms that NRST, BUSY, DIO1, a
 
 ## What the test does (step by step)
 
-1. **Reset both modules (GPIO)**  
-   - Drive **NRST** low for 10 ms, then high.  
-   - Set **RF_SW** high (receiver path; safe idle state).  
+1. **Reset both modules (GPIO)**
+   - Drive **NRST** low for 10 ms, then high.
+   - Set **RF_SW** high (receiver path; safe idle state).
    - This is the same reset sequence as in the GPIO test.
 
-2. **Wait for chips to be ready**  
+2. **Wait for chips to be ready**
    - Wait 200 ms so the SX1262 can complete its power‑on/calibration and pull **BUSY** low when idle.
 
-3. **For Module A (spidev0.0 / CE0):**  
-   - Wait until **BUSY** (GPIO 18) is low.  
-   - Open **/dev/spidev0.0**. The Pi’s SPI driver drives **NSS** (CE0) low when we transfer.  
-   - Send one byte: **0xC0** (GetStatus command).  
-   - Read one byte back (the status response).  
-   - Close the device.  
+3. **For Module A (spidev0.0 / CE0):**
+   - Wait until **BUSY** (GPIO 18) is low.
+   - Open **/dev/spidev0.0**. The Pi's SPI driver drives **NSS** (CE0) low when we transfer.
+   - Send one byte: **0xC0** (GetStatus command).
+   - Read one byte back (the status response).
+   - Close the device.
    - Wait until **BUSY** is low again (so the chip is ready for the next command).
 
-4. **For Module B (spidev0.1 / CE1):**  
-   - Same sequence using **/dev/spidev0.1** and Module B’s **BUSY** (GPIO 5).  
+4. **For Module B (spidev0.1 / CE1):**
+   - Same sequence using **/dev/spidev0.1** and Module B's **BUSY** (GPIO 5).
    - Only the chip select (CE1) and BUSY pin differ; MOSI/MISO/SCK are shared.
 
-5. **Result**  
-   - The script prints the **status byte** for each module (e.g. `0x02`) and a short summary.  
-   - If it got a byte from both modules, the test **passes**.  
-   - If the byte is **0xFF**, the script warns: that often means MISO is floating or no chip is responding (wiring or NSS wrong).  
+5. **Result**
+   - The script prints the **status byte** for each module (e.g. `0x02`) and a short summary.
+   - If it got a byte from both modules, the test **passes**.
+   - If the byte is **0xFF**, the script warns: that often means MISO is floating or no chip is responding (wiring or NSS wrong).
    - Any other value (e.g. 0x00, 0x02) usually means the chip replied; the low bits indicate chip mode and command status.
 
 ---
@@ -44,18 +44,18 @@ After the **GPIO test** (`test_connection.py`) confirms that NRST, BUSY, DIO1, a
 
 The SX1262 drives **BUSY** high while it is processing a command and pulls it **low** when it is ready for the next one. The datasheet and wiring notes require:
 
-- **Before** every SPI transaction: wait until BUSY is low.  
+- **Before** every SPI transaction: wait until BUSY is low.
 - **After** the transaction: wait until BUSY is low again before sending another command.
 
-If we don’t wait, we might clock in a new command while the chip is still handling the previous one, which can corrupt state or return garbage. The test script polls the BUSY GPIO before and after the single GetStatus transfer to follow this rule.
+If we don't wait, we might clock in a new command while the chip is still handling the previous one, which can corrupt state or return garbage. The test script polls the BUSY GPIO before and after the single GetStatus transfer to follow this rule.
 
 ---
 
 ## Why we use GetStatus (0xC0)
 
-- **GetStatus** is a simple “are you there?” command: one byte out (0xC0), one byte back (status).  
-- It doesn’t change radio configuration or require any prior setup (e.g. no need to configure TCXO or LoRa params first).  
-- The response byte encodes chip mode and command status; even a “generic” value (e.g. 0x00 or 0x02) confirms that the chip received the command and drove MISO.
+- **GetStatus** is a simple "are you there?" command: one byte out (0xC0), one byte back (status).
+- It doesn't change radio configuration or require any prior setup (e.g. no need to configure TCXO or LoRa params first).
+- The response byte encodes chip mode and command status; even a "generic" value (e.g. 0x00 or 0x02) confirms that the chip received the command and drove MISO.
 
 So this one command is enough to verify that SPI, NSS, and BUSY handling are correct for both modules.
 
@@ -63,10 +63,10 @@ So this one command is enough to verify that SPI, NSS, and BUSY handling are cor
 
 ## NSS (chip select) and spidev
 
-- **Module A** is on **CE0** → Linux device **/dev/spidev0.0**.  
+- **Module A** is on **CE0** → Linux device **/dev/spidev0.0**.
 - **Module B** is on **CE1** → Linux device **/dev/spidev0.1**.
 
-When we call `spi.open(0, 0)` or `spi.open(0, 1)` and then `spi.xfer2(...)`, the kernel drives the corresponding NSS line low for the duration of the transfer. We do **not** drive NSS from Python; the Pi’s SPI driver does it. We only make sure BUSY is low before and after each transfer.
+When we call `spi.open(0, 0)` or `spi.open(0, 1)` and then `spi.xfer2(...)`, the kernel drives the corresponding NSS line low for the duration of the transfer. We do **not** drive NSS from Python; the Pi's SPI driver does it. We only make sure BUSY is low before and after each transfer.
 
 ---
 
@@ -79,30 +79,30 @@ When we call `spi.open(0, 0)` or `spi.open(0, 1)` and then `spi.xfer2(...)`, the
   - Summary: `Both modules responded over SPI.`
 - **Exit code** is 0.
 
-If you see **0xFF** for one or both modules, the script still reports PASS (it got a byte) but prints a warning: double‑check that module’s NSS, MISO, and GND.
+If you see **0xFF** for one or both modules, the script still reports PASS (it got a byte) but prints a warning: double‑check that module's NSS, MISO, and GND.
 
 ---
 
-## What to expect when it doesn’t work
+## What to expect when it doesn't work
 
-- **`/dev/spidev0.0` not found**  
+- **`/dev/spidev0.0` not found**
   - SPI is not enabled. Add `dtparam=spi=on` to `/boot/firmware/config.txt`, reboot, and run again.
 
-- **Permission denied** on `/dev/spidev0.*`  
+- **Permission denied** on `/dev/spidev0.*`
   - Add your user to the `spi` group: `sudo usermod -aG spi $USER`, then log out and back in (or reboot).
 
-- **BUSY did not go low**  
-  - Wiring: check the BUSY pin for that module (and GND).  
-  - Or the chip didn’t power up: check 3V3 and GND.
+- **BUSY did not go low**
+  - Wiring: check the BUSY pin for that module (and GND).
+  - Or the chip didn't power up: check 3V3 and GND.
 
-- **0xFF from chip**  
+- **0xFF from chip**
   - Often means MISO not connected, wrong NSS (wrong module selected), or chip not powered. Check wiring for that module.
 
 ---
 
 ## How to run the test
 
-From the repo root, on the Pi, with the two modules wired per `docs/sx1262-ping-test/wiring.md`:
+From the repo root, on the Pi, with the two modules wired per `context/wiring.md`:
 
 ```bash
 python3 sx1262_gpio_test/test_spi.py

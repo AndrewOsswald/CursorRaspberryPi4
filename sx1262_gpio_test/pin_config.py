@@ -1,7 +1,7 @@
 """
 Pin configuration for two Wio-SX1262 modules on Raspberry Pi 4 (BCM numbering).
 
-Source: docs/sx1262-ping-test/wiring.md and docs/system-environment.md.
+Source: sx1262_gpio_test/context/wiring.md and agent/system-environment.md.
 """
 
 # Module A (CE0 / spidev0.0)
