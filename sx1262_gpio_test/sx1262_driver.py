@@ -151,7 +151,7 @@ class SX1262:
         payload_len: int = 4,
     ) -> None:
         """Configure LoRa: packet type, frequency, modulation, packet params. Enables TCXO.
-        Order matches RadioLib modSetup: standby, TCXO, config (packet/freq/cal), then regulator last."""
+        Order: standby retry, TCXO, Standby(0x00), Calibrate+CalibrateImage (Semtech ref: no packet/freq before cal), then packet/freq, regulator, STBY_XOSC."""
         _ms(50)
         # RadioLib: reset then retry standby until it works ("SX126x often refuses first few commands")
         for _ in range(20):
@@ -159,18 +159,16 @@ class SX1262:
             if self.wait_busy(200):
                 break
             _ms(10)
-        # RadioLib: setTCXO then config(); regulator is set *after* config
+        # Semtech ref (SX126xLib Init): SetStandby(STDBY_RC) -> SetDio3AsTcxoCtrl -> Calibrate(0x7F).
+        # No SetPacketType or SetRfFrequency before Calibrate. We do Calibrate + CalibrateImage first.
         TCXO_DELAY_UNITS = 320  # 5 ms
         self.cmd([CMD_SET_TCXOMODE, 0x06, (TCXO_DELAY_UNITS >> 16) & 0xFF, (TCXO_DELAY_UNITS >> 8) & 0xFF, TCXO_DELAY_UNITS & 0xFF])
         self.cmd([CMD_SET_STANDBY, 0x00])
-        self.cmd([CMD_SET_PACKETTYPE, PACKET_TYPE_LORA])
-        r = freq_to_reg(freq_hz)
-        self.cmd([CMD_SET_RFFREQUENCY, (r >> 24) & 0xFF, (r >> 16) & 0xFF, (r >> 8) & 0xFF, r & 0xFF])
         self.cmd([CMD_CALIBRATE, 0x7F])
         if not self.wait_busy(1000):
             raise RuntimeError("Calibrate BUSY timeout")
         _ms(2)
-        # CalibrateImage takes 2 bytes (datasheet). 863–870: 0xD7,0xDB; 902–928: 0xE1,0xE9. Both must be odd.
+        # CalibrateImage takes 2 bytes (datasheet). Band from freq_hz; no SetRfFrequency before this.
         if freq_hz >= 900_000_000:
             cal_img = [0xE1, 0xE9]  # 902–928 MHz
         else:
@@ -180,6 +178,10 @@ class SX1262:
             raise RuntimeError("CalibrateImage BUSY timeout")
         _ms(2)
         self.cmd([CMD_CLR_ERROR, 0x00, 0x00])
+        # Radio config after calibration (datasheet 14.4: SetPacketType first radio config).
+        self.cmd([CMD_SET_PACKETTYPE, PACKET_TYPE_LORA])
+        r = freq_to_reg(freq_hz)
+        self.cmd([CMD_SET_RFFREQUENCY, (r >> 24) & 0xFF, (r >> 16) & 0xFF, (r >> 8) & 0xFF, r & 0xFF])
         # Set DC-DC before XOSC (Wio uses DC-DC; XOSC may need stable supply)
         self.cmd([CMD_SET_REGULATORMODE, 0x01])
         self.cmd([CMD_SET_STANDBY, 0x01])

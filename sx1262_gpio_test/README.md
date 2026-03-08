@@ -34,10 +34,31 @@ python3 sx1262_gpio_test/test_spi.py --output sx1262_gpio_test/spi_results.txt
 
 Requires **spidev** (`pip install spidev` if needed) and SPI enabled (`dtparam=spi=on`, reboot). See **`docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md`** for a full explanation of what the test does and how to interpret results.
 
+## Ping test (LoRa A→B→A)
+
+```bash
+python3 sx1262_gpio_test/test_ping.py
+python3 sx1262_gpio_test/test_ping.py --output sx1262_gpio_test/ping_results.txt
+```
+
+See **`docs/sx1262-ping-test/PING_TEST_SUMMARY.md`** for flow, current result, and driver changes.
+
+## Minimal status test (Module A only)
+
+```bash
+python3 sx1262_gpio_test/test_status_minimal.py
+```
+
+Resets Module A, runs full LoRa init, calls `start_tx()`, then prints GetStatus. Useful to check if one module ever leaves STBY_RC after SetTx.
+
 ## Files
 
 - `pin_config.py` — BCM pin numbers for Module A and B (NRST, BUSY, DIO1, RF_SW).
 - `test_connection.py` — GPIO test; resets both modules and reads BUSY/DIO1.
 - `test_spi.py` — SPI test; sends GetStatus (0xC0) to each module and reads the status byte.
-- `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md` — Detailed explanation of the SPI test and what to expect.
-- `results.txt` / `spi_results.txt` — Optional; created when you pass `--output ...`.
+- `sx1262_driver.py` — LoRa driver (init, TX, RX, IRQ, buffer).
+- `test_ping.py` — Ping test (A sends "ping", B replies "pong", A receives).
+- `test_status_minimal.py` — Module A only: reset → init_lora → start_tx → status.
+- `docs/sx1262-ping-test/SPI_TEST_EXPLAINED.md` — SPI test details.
+- `docs/sx1262-ping-test/PING_TEST_SUMMARY.md` — Ping test summary and next steps.
+- `results.txt` / `spi_results.txt` / `ping_results.txt` — Optional; created when you pass `--output ...`.

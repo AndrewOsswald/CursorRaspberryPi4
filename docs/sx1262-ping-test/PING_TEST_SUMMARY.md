@@ -13,7 +13,7 @@ This document summarizes the **ping test** implementation and current results. *
   - **CalibrateImage** takes **two band bytes**; we had been sending one. Use **0xD7, 0xDB** for 863–870 MHz and **0xE1, 0xE9** for 902–928 MHz (both bytes must be odd per RadioLib issue #1096).
   - **RadioLib modSetup order:** reset → retry Standby until BUSY ok → **setTCXO** → **config** (packet type, freq, Calibrate, CalibrateImage) → **setRegulatorDCDC** last. We now do TCXO then config; we set regulator *before* switching to STBY_XOSC so the Wio has DC-DC for XOSC.
   - **Retry standby** after reset (RadioLib: “SX126x often refuses first few commands”).
-- **What did *not* fix it:** Calibration from STBY_RC only; longer reset (500 ms) or TCXO delay (10 ms); LDO-only regulator; SetPaConfig; clearing errors after cal or before SetTx; 915 MHz; many timing tweaks.
+- **What did *not* fix it:** Calibration from STBY_RC only; longer reset (500 ms) or TCXO delay (10 ms); LDO-only regulator; SetPaConfig; clearing errors after cal or before SetTx; 915 MHz; many timing tweaks; **Semtech init order** (Calibrate+CalibrateImage before SetPacketType/SetRfFrequency) — tried, same 0x200A.
 - **Next directions:** (1) **Hardware:** antennas (50 Ω) on both modules, power quality, try single module (only A) to rule out SPI/contention. (2) **Software:** Run a known-good stack (e.g. RadioLib or Semtech ref) on the *same* Pi + modules; if that works, diff our init. (3) **Ref:** RadioLib `SX126x::modSetup()` and `config()` in `src/modules/SX126x/SX126x.cpp`; their `findChip()` resets and retries standby; regulator is set after `config(modem)`.
 
 ---
@@ -66,7 +66,7 @@ Requires: **gpiozero**, **spidev**, and the same hardware setup as the SPI test.
 - **SPI test:** **PASS** — Both modules respond (A often 0xAA, B 0x00). NSS (CE0/CE1) correct.
 - **Ping test:** **FAIL** — Reaches “Module A: sending 'ping'…” then **TX fails (no TxDone)**. **Error = 0x200A** → **RC13M_CALIB_ERR, ADC_CALIB_ERR**. Init runs; block calibration appears to fail on the chip.
 
-**Current driver init (RadioLib-aligned):** 50 ms delay → retry Standby(0x00) until BUSY ok (20 tries) → SetTcxoMode 3.0 V, 320 units (5 ms) → Standby(0x00) → SetPacketType LoRa → SetRfFrequency → Calibrate(0x7F) + wait BUSY + 2 ms → **CalibrateImage** with **2 bytes** (868: 0xD7,0xDB; 915: 0xE1,0xE9) + wait BUSY + 2 ms → ClearDeviceErrors → SetRegulatorMode DC-DC → SetStandby(0x01) → ClearDeviceErrors → SetPaConfig → SetTxParams 10 dBm → SetModulationParams → SetPacketParams → SetBufferBaseAddress → SetDioIrqParams. Reset: 20 ms NRST low, **500 ms** after release; ClearDeviceErrors. start_tx: SetStandby(0x01), 5 ms, ClearDeviceErrors, SetTx.
+**Current driver init (Semtech order):** 50 ms → retry Standby(0x00) until BUSY ok (20 tries) → SetTcxoMode 3.0 V, 320 units (5 ms) → Standby(0x00) → **Calibrate(0x7F)** + wait BUSY + 2 ms → **CalibrateImage** 2 bytes (868: 0xD7,0xDB; 915: 0xE1,0xE9) + wait BUSY + 2 ms → ClearDeviceErrors → **SetPacketType** LoRa → **SetRfFrequency** → SetRegulatorMode DC-DC → SetStandby(0x01) → ClearDeviceErrors → SetPaConfig → SetTxParams 10 dBm → SetModulationParams → SetPacketParams → SetBufferBaseAddress → SetDioIrqParams. Reset: 20 ms NRST low, 500 ms after release; ClearDeviceErrors. start_tx: SetStandby(0x01), 5 ms, ClearDeviceErrors, SetTx.
 
 **Datasheet/AN:** See **`DATASHEET_AND_AN_NOTES.md`**. ClearDeviceErrors 0x00,0x00. CalibrateImage band bytes per datasheet/RadioLib (863–870: 0xD7,0xDB; 902–928: 0xE1,0xE9). decode_device_error() logs set bits on TX failure.
 

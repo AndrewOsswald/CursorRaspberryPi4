@@ -1,11 +1,27 @@
 # SX1262 and Wio-SX1262 notes from datasheets and app notes
 
-**Purpose:** Preserve the key setup and debug information from the Semtech SX1261/2 Datasheet, AN1200.59 (Reference Clock), and Seeed Wio-SX1262-N Module Datasheet so the PDFs do not need to stay in the repo. Use this when changing the driver or debugging TX/RX/TCXO/errors.
+**Purpose:** Preserve the key setup and debug information from the Semtech SX1261/2 Datasheet, AN1200.59 (Reference Clock), and Seeed Wio-SX1262-N Module Datasheet so the PDFs do not need to stay in the repo. **The SX1262 datasheet PDF is not in the repo;** everything needed for the driver and troubleshooting is here or in the cited sources. Use this when changing the driver or debugging TX/RX/TCXO/errors.
 
 **Sources (obtain from Semtech / Seeed if needed):**
-- *SX1261/2 Data Sheet* DS.SX1261-2.W.APP Rev. 1.2 June 2019 (Semtech)
+- *SX1261/2 Data Sheet* DS.SX1261-2.W.APP Rev. 1.2 June 2019 (Semtech) — [semtech.com SX1262 product page](https://www.semtech.com/products/wireless-rf/lora-connect/sx1262)
 - *AN1200.59* Selecting the Optimal Reference Clock Rev. 1.3 April 2022 (Semtech)
 - *Wio-SX1262 / Wio-SX1262-N Module Datasheet* (Seeed)
+
+---
+
+## 0. Quick reference (no PDF needed)
+
+**Command opcodes used in this project:** GetStatus 0xC0, SetStandby 0x80, SetRx 0x82, SetTx 0x83, SetPacketType 0x8A, SetRfFrequency 0x86, SetTxParams 0x8E, SetModulationParams 0x8B, SetPacketParams 0x8C, SetDioIrqParams 0x08, GetIrqStatus 0x12, ClrIrqStatus 0x02, WriteBuffer 0x0E, ReadBuffer 0x1E, GetRxBufferStatus 0x13, SetTcxoMode 0x97, SetRegulatorMode 0x96, SetPaConfig 0x95, Calibrate 0x89, CalibrateImage 0x98, SetBufferBaseAddress 0x8F, GetDeviceErrors 0x17, ClearDeviceErrors 0x07.
+
+**SetStandby:** 0x00 = STDBY_RC (internal RC clock), 0x01 = STDBY_XOSC (32 MHz from TCXO/crystal). After reset the chip is in STDBY_RC.
+
+**GetStatus (0xC0):** Returns 1 byte. ChipMode in bits [6:5]: 0 = STBY_RC, 1 = STBY_XOSC, 2 = FS, 3 = RX or TX. Wait for BUSY low before/after every SPI command.
+
+**RF frequency:** freq_reg = (freq_Hz × 2^25) / 32_000_000 (24-bit); 32 MHz reference.
+
+**Calibrate (0x89) param:** 0x7F = calibrate all blocks (RC64K, RC13M, PLL, ADC). Image calibration is separate (CalibrateImage 0x98).
+
+**SetTx / SetRx:** 3-byte timeout in RTC steps (1 step = 15.625 µs). Timeout 0 = single shot (TX) or no timeout (RX).
 
 ---
 
@@ -97,7 +113,7 @@ After power up or hard reset the chip is in STDBY_RC (BUSY low). Steps for basic
 ## 5. Other SX1262 datasheet details
 
 - **SetRegulatorMode (0x96):** 0 = LDO only; 1 = DC_DC+LDO for STBY_XOSC, FS, RX, TX. Wio module uses DC-DC.
-- **Calibrate (0x89):** Must be launched from **STDBY_RC**. BUSY high during calibration. Total time for all blocks **3.5 ms**.
+- **Calibrate (0x89):** Must be launched from **STDBY_RC**. BUSY high during calibration. Total time for all blocks **3.5 ms**. **Semtech SX126xLib Init()** runs **Calibrate(0x7F) right after SetStandby(STDBY_RC) and SetDio3AsTcxoCtrl**, with **no** SetPacketType or SetRfFrequency before it. If RC13M_CALIB_ERR/ADC_CALIB_ERR occur, run Calibrate (and CalibrateImage) before any packet type or RF frequency configuration.
 - **CalibrateImage (0x98):** Takes **2 bytes** (band coefficients). 863–870 MHz: **0xD7, 0xDB**; 902–928 MHz: **0xE1, 0xE9** (both odd). Band-dependent; see “Image Calibration for Specific Frequency Bands” in datasheet.
 - **GetStatus (0xC0):** Returns 1 byte (Status). Used to read chip mode and command status.
 
@@ -115,6 +131,7 @@ After power up or hard reset the chip is in STDBY_RC (BUSY low). Steps for basic
 
 ## 7. Driver implementation notes (this project)
 
+- **Init order:** Calibrate and CalibrateImage are run **before** SetPacketType and SetRfFrequency (Semtech SX126xLib order) to avoid RC13M/ADC calibration failures.
 - TCXO: **SetTcxoMode** with tcxoVoltage **0x06** (3.0 V) and **delay = 320** (320 × 15.625 µs = 5 ms) so the chip gates the 32 MHz until the TCXO is stable. Delay 0 would cause XOSC_START_ERR.
 - After **SetStandby(0x01)** (STDBY_XOSC), call **ClearDeviceErrors** once to clear XOSC_START_ERR (expected at POR with TCXO per datasheet); also in reset and before TX (clear_error()).
 - **ClearDeviceErrors** payload: opcode **0x07** then **0x00, 0x00** (datasheet 13.6; clears all errors).

@@ -29,14 +29,15 @@
 
 **Current failure:** Module A never gets TxDone. **Error = 0x200A** decodes to **RC13M_CALIB_ERR, ADC_CALIB_ERR** — block calibration (Calibrate 0x7F) fails on the chip.
 
-**What we learned:** Arduino/RadioLib (begin + startTransmit) works on similar hardware, so the chip can work. Driver is RadioLib-aligned: retry Standby after reset; TCXO then config; CalibrateImage with **2-byte** band params (868: 0xD7,0xDB; 915: 0xE1,0xE9); ClearDeviceErrors 0x00,0x00; regulator before STBY_XOSC. Many variants tried without PASS. See PING_TEST_SUMMARY.md **"What we learned (for next session)"** for full list.
+**What we learned:** Arduino/RadioLib (begin + startTransmit) works on similar hardware, so the chip can work. Driver: retry Standby, TCXO then config, CalibrateImage **2-byte** band params, ClearDeviceErrors 0x00,0x00, regulator before STBY_XOSC. Semtech init order (Calibrate before SetPacketType/SetRfFrequency) tried; same 0x200A. See PING_TEST_SUMMARY.md **"What we learned (for next session)"** for full list.
 
-**Next to try:** (1) **Hardware:** 50 Ω antennas on both modules; power quality; run with **one module only (A)** to rule out SPI contention. (2) Run a **known-good stack** (RadioLib or Semtech ref) on the same Pi + modules; if it works, diff our init. (3) **Ref:** RadioLib `SX126x::modSetup()`, `config()`, `findChip()` in jgromes/RadioLib src/modules/SX126x/.
+**Next to try:** (1) **Hardware:** 50 Ω antennas on both modules; power quality; one module only (A) to rule out SPI contention. (2) Run known-good stack on same Pi; diff init. (3) **Ref:** RadioLib SX126x; Semtech SX126xLib Init() in os.mbed.com/teams/Semtech/code/SX126xLib.
 
 ---
 
 ## Completed
 
+- **Semtech init order tried:** Driver reordered so Calibrate(0x7F) and CalibrateImage run immediately after SetStandby(STDBY_RC)+SetTcxoMode, before SetPacketType/SetRfFrequency (Semtech SX126xLib order). Ping test re-run; still FAIL, same error 0x200A (RC13M_CALIB_ERR, ADC_CALIB_ERR). DATASHEET_AND_AN_NOTES updated with Section 0 (quick reference, no PDF in repo).
 - **Cleanup handoff:** Docs updated for next session: PING_TEST_SUMMARY.md has **"What we learned (for next session)"** (Arduino works so chip can work; CalibrateImage 2 bytes; RadioLib order; what didn't fix it; next directions). Task and feature docs point to it. Driver state: RadioLib-aligned init, CalibrateImage 0xD7/0xDB (868) or 0xE1/0xE9 (915), regulator before XOSC.
 - **Calibration from STBY_RC, 915 MHz, RadioLib:** init_lora now does SetStandby(0x00) before Calibrate/CalibrateImage, then SetStandby(0x01) after (datasheet: Calibrate from STDBY_RC). Ran ping at 868 and 915 MHz — both FAIL, same error bits (RC13M_CALIB_ERR, ADC_CALIB_ERR). RadioLib comparison noted in PING_TEST_SUMMARY and DATASHEET_AND_AN_NOTES.
 - **Error decode and ClearDeviceErrors fix:** ClearDeviceErrors payload set to 0x00,0x00 (datasheet 13.6). init_lora clears device errors immediately after SetStandby(0x01) to clear expected XOSC_START_ERR at POR. Added decode_device_error() in driver; test_ping logs "Error bits: …" on TX failure. Docs updated (DATASHEET_AND_AN_NOTES, PING_TEST_SUMMARY, feature, task).
