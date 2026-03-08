@@ -46,6 +46,30 @@ SPI and power can be shared; NSS, NRST, BUSY, DIO1, and RF_SW are per-module.
 
 ---
 
+## Board labels: Wio-SX1262 for XIAO carrier
+
+If your module is the **Wio-SX1262 for XIAO** (carrier board with pin headers and labels on the back), there are no pin numbers—use the **labels** instead. Mapping from board label to the same Pi connections (wire colors unchanged):
+
+| Board label (on back) | Same as | Pi connection (see tables above) |
+|----------------------|---------|-----------------------------------|
+| **3V3** | VCC | Pi 3.3 V (pin 1 or 17) — **use 3V3, not VIN, when powering from Pi** |
+| **GND** | GND | Pi GND |
+| **MOSI** | SPI MOSI | Pi pin 19 (Orange) |
+| **MISO** | SPI MISO | Pi pin 21 (Yellow) |
+| **SCK** | SPI SCLK | Pi pin 23 (Green) |
+| **NSS** | Chip select | Module A: Pi pin 24 (Blue). Module B: Pi pin 26 (Violet). |
+| **RST** | NRST (reset) | Module A: Pi pin 11 (Blue). Module B: Pi pin 22 (Violet). |
+| **BUSY** | Busy | Module A: Pi pin 12 (Blue). Module B: Pi pin 29 (Violet). |
+| **DIO1** | DIO1 / IRQ | Module A: Pi pin 15 (Blue). Module B: Pi pin 31 (Violet). |
+| **RF_SW** | RF switch | Module A: Pi pin 16 (Blue). Module B: Pi pin 32 (Violet). |
+| **DO** | RF out / ANT | Antenna or 50 Ω load (do not leave open). |
+| **VIN** | — | Unused when powering from Pi 3.3 V; use **3V3** only. |
+| **D6**, **D7** | — | Not needed for this wiring. |
+
+So for each wire: same Pi pin and color as in the step-by-step below; on the module side, connect to the **labeled header** (e.g. Module A **RST**, **BUSY**, **DIO1**, **RF_SW**, **NSS**, **3V3**, **GND**, and **MOSI** / **MISO** / **SCK**).
+
+---
+
 ## Wire color code
 
 Use the same color for each signal so you can trace and debug easily. Suggested scheme:
@@ -69,7 +93,8 @@ If you don’t have enough shades to give every control line a unique color, kee
 **1. Power off the Pi** (shutdown, then disconnect power).
 
 **2. Identify the pins on each Wio-SX1262.**  
-Pin 1 is usually marked (dot or “1”); count in order along the 12-pin footprint. Pin 1 = RF_SW, Pin 6 = NSS, Pin 8 = VCC, Pins 7 and 10 = GND. If in doubt, check the module datasheet or `wio-sx1262-module.md`.
+- **If you have the Wio-SX1262 for XIAO carrier board** (labels on the back): use the **Board labels** table above—connect to **3V3**, **GND**, **MOSI**, **MISO**, **SCK**, **NSS**, **RST**, **BUSY**, **DIO1**, **RF_SW**, and **DO** (antenna) as labeled; ignore pin numbers in the steps below and use those labels instead.  
+- **If you have the raw 12-pin SMT module:** Pin 1 is usually marked (dot or “1”); count in order. Pin 1 = RF_SW, Pin 6 = NSS, Pin 8 = VCC, Pins 7 and 10 = GND. See `wio-sx1262-module.md`.
 
 **3. Connect grounds first (black).**  
 - **Black:** Pi physical pin 6 (GND) → Module A pin 7 (GND).  
