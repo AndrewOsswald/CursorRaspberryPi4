@@ -33,6 +33,9 @@ docs/
   gpio-led-blink/
     feature.md
     task-gpio-led-blink.md
+  sx1262-ping-test/
+    feature.md
+    task-sx1262-ping-test.md
 ```
 
 (Feature folders added under `docs/` as needed; user gives task doc path when starting a chat.)

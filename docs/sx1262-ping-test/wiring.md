@@ -1,0 +1,151 @@
+# Wiring: Two Wio-SX1262 modules to Raspberry Pi 4
+
+**Purpose:** Connect both Wio-SX1262 modules to the same Pi 4 over SPI so you can get them talking (and later run the ping test from one host). Each module gets its own chip select (NSS) and its own GPIOs for NRST, BUSY, DIO1, and RF_SW.
+
+**Hardware context:** Pi 4 pinout and 3.3 V constraints in `docs/system-environment.md`. Module pinout in `wio-sx1262-module.md` in this folder.
+
+---
+
+## Is it possible?
+
+Yes. The Pi 4 has **SPI0** with two chip-select outputs (CE0 and CE1). You share MOSI, MISO, and SCLK between both modules and use CE0 for module A and CE1 for module B. Each module also needs four dedicated GPIOs: NRST, BUSY, DIO1, RF_SW. The Pi has enough free GPIOs for that.
+
+---
+
+## Safety (read first)
+
+- **Power off the Pi** (shutdown, then unplug power) before connecting or changing any wires. Do not hot-plug the modules.
+- **3.3 V only.** Pi GPIO and the modules are 3.3 V. Do not connect 5 V to any module pin or GPIO; it can damage the Pi and the module.
+- **Polarity:** Double-check VCC and GND. Reversed power can damage the module.
+- **Current:** Each module can draw up to ~125 mA when transmitting. Both on Pi 3.3 V is OK for normal use (e.g. one TX at a time). If you stress-test with both transmitting at once, the Pi’s 3.3 V rail may be marginal; use an external 3.3 V supply for the radios if you see brownouts.
+- **Connect GND first** between Pi and each module, then power and signals, so you don’t float signals during wiring.
+
+---
+
+## Pin assignment summary
+
+| Function   | Pi 4 (BCM) | Physical pin | Module A pin | Module B pin | Wire color |
+|-----------|------------|--------------|--------------|---------------|------------|
+| SPI MOSI  | 10         | 19           | 3 (MOSI)     | 3 (MOSI)      | Orange     |
+| SPI MISO  | 9          | 21           | 2 (MISO)     | 2 (MISO)      | Yellow     |
+| SPI SCLK  | 11         | 23           | 4 (SCK)      | 4 (SCK)       | Green      |
+| NSS (CS)  | 8 (CE0)    | 24           | 6 (NSS)      | —             | Blue (A)   |
+| NSS (CS)  | 7 (CE1)    | 26           | —            | 6 (NSS)       | Violet (B) |
+| NRST      | 17         | 11           | 5 (NRST)     | —             | Blue (A)   |
+| NRST      | 25         | 22           | —            | 5 (NRST)      | Violet (B) |
+| BUSY      | 18         | 12           | 11 (BUSY)    | —             | Blue (A)   |
+| BUSY      | 5          | 29           | —            | 11 (BUSY)     | Violet (B) |
+| DIO1      | 22         | 15           | 12 (DIO1)    | —             | Blue (A)   |
+| DIO1      | 6          | 31           | —            | 12 (DIO1)     | Violet (B) |
+| RF_SW     | 23         | 16           | 1 (RF_SW)    | —             | Blue (A)   |
+| RF_SW     | 12         | 32           | —            | 1 (RF_SW)     | Violet (B) |
+| 3.3 V     | —          | 1 or 17      | 8 (VCC)      | 8 (VCC)       | Red        |
+| GND       | —          | 6, 9, 14, 20, 25, 30, 34, 39 | 7, 10 (GND) | 7, 10 (GND)   | Black      |
+
+SPI and power can be shared; NSS, NRST, BUSY, DIO1, and RF_SW are per-module.
+
+---
+
+## Wire color code
+
+Use the same color for each signal so you can trace and debug easily. Suggested scheme:
+
+| Color    | Signal / use |
+|----------|----------------|
+| **Red**  | 3.3 V (VCC) |
+| **Black**| GND |
+| **Orange** | SPI MOSI (shared) |
+| **Yellow**  | SPI MISO (shared) |
+| **Green**   | SPI SCLK (shared) |
+| **Blue**    | Module A — NSS, NRST, BUSY, DIO1, RF_SW (use one shade, or blue + stripe for one of them) |
+| **Violet/Purple** | Module B — NSS, NRST, BUSY, DIO1, RF_SW |
+
+If you don’t have enough shades to give every control line a unique color, keep **power (red/black)** and **SPI (orange/yellow/green)** consistent, and use **blue for Module A** and **violet for Module B** for all four control wires per module; label the ends (e.g. tape + marker: “A-NRST”, “B-BUSY”) so you don’t mix them.
+
+---
+
+## Step-by-step wiring
+
+**1. Power off the Pi** (shutdown, then disconnect power).
+
+**2. Identify the pins on each Wio-SX1262.**  
+Pin 1 is usually marked (dot or “1”); count in order along the 12-pin footprint. Pin 1 = RF_SW, Pin 6 = NSS, Pin 8 = VCC, Pins 7 and 10 = GND. If in doubt, check the module datasheet or `wio-sx1262-module.md`.
+
+**3. Connect grounds first (black).**  
+- **Black:** Pi physical pin 6 (GND) → Module A pin 7 (GND).  
+- **Black:** Pi physical pin 9 (GND) → Module A pin 10 (GND).  
+- **Black:** Pi physical pin 14 (GND) → Module B pin 7 (GND).  
+- **Black:** Pi physical pin 20 (GND) → Module B pin 10 (GND).  
+(You can use a single GND rail on a breadboard; just ensure Pi GND and both modules’ GND are tied together.)
+
+**4. Connect 3.3 V (red).**  
+- **Red:** Pi physical pin 1 (3.3 V) → Module A pin 8 (VCC).  
+- **Red:** Pi physical pin 17 (3.3 V) → Module B pin 8 (VCC).  
+(Or one 3.3 V source to both VCC pins; ensure common GND.)
+
+**5. Connect shared SPI (orange, yellow, green — to both modules).**  
+- **Orange:** Pi pin 19 (GPIO 10, MOSI) → Module A pin 3 (MOSI) **and** Module B pin 3 (MOSI).  
+- **Yellow:** Pi pin 21 (GPIO 9, MISO) → Module A pin 2 (MISO) **and** Module B pin 2 (MISO).  
+- **Green:** Pi pin 23 (GPIO 11, SCLK) → Module A pin 4 (SCK) **and** Module B pin 4 (SCK).
+
+**6. Connect chip select (NSS).**  
+- **Blue:** Pi pin 24 (GPIO 8, CE0) → **only** Module A pin 6 (NSS).  
+- **Violet:** Pi pin 26 (GPIO 7, CE1) → **only** Module B pin 6 (NSS).
+
+**7. Connect Module A control pins (blue — label ends A-NRST, A-BUSY, A-DIO1, A-RF_SW).**  
+- **Blue:** Pi pin 11 (GPIO 17) → Module A pin 5 (NRST).  
+- **Blue:** Pi pin 12 (GPIO 18) → Module A pin 11 (BUSY).  
+- **Blue:** Pi pin 15 (GPIO 22) → Module A pin 12 (DIO1).  
+- **Blue:** Pi pin 16 (GPIO 23) → Module A pin 1 (RF_SW).
+
+**8. Connect Module B control pins (violet — label ends B-NRST, B-BUSY, B-DIO1, B-RF_SW).**  
+- **Violet:** Pi pin 22 (GPIO 25) → Module B pin 5 (NRST).  
+- **Violet:** Pi pin 29 (GPIO 5) → Module B pin 11 (BUSY).  
+- **Violet:** Pi pin 31 (GPIO 6) → Module B pin 12 (DIO1).  
+- **Violet:** Pi pin 32 (GPIO 12) → Module B pin 1 (RF_SW).
+
+**9. Antenna.**  
+Connect an antenna (or 50 Ω load) to each module’s RF port (IPEX or SMT pin 9 on -N). Do not run the radios without an antenna or load; it can damage the PA.
+
+**10. Double-check.**  
+- No 5 V on any module or GPIO.  
+- All GNDs common.  
+- No shorts between pins.  
+- NSS/CE0 only to module A, NSS/CE1 only to module B.
+
+**11. Power on the Pi** and enable SPI if needed (see below).
+
+---
+
+## SPI on the Pi
+
+- **Devices:** Module A = `/dev/spidev0.0` (CE0), Module B = `/dev/spidev0.1` (CE1).
+- **Enable SPI:** In `/boot/firmware/config.txt` ensure `dtparam=spi=on` is present (no `#`). Reboot. Then `ls /dev/spidev0.*` should show `spidev0.0` and `spidev0.1`.
+- **Permissions:** Your user needs access to SPI (e.g. in group `spi`). Check with `groups`; add with `sudo usermod -aG spi $USER` and log out/in if needed.
+
+---
+
+## Software notes (for when you add code)
+
+- **BUSY:** Before and after every SPI transaction to a module, read the BUSY GPIO for that module; only send a command when BUSY is low.
+- **NSS:** Drive the correct CE (8 for A, 7 for B) low for the module you’re talking to; leave the other high so only one module is selected.
+- **NRST:** Hold low for a few ms, then release (high) for a clean reset before init.
+- **RF_SW:** High = receiver mode; drive as needed for RX/TX (or match your driver’s expectations).
+
+---
+
+## Quick reference: Pi physical pins used
+
+| Pin | Use        | Color  | Pin | Use        | Color  |
+|-----|------------|--------|-----|------------|--------|
+| 1   | 3.3 V (A)  | Red    | 2   | 5 V (unused) | —      |
+| 6   | GND        | Black  | 9   | GND        | Black  |
+| 11  | GPIO 17 (A NRST) | Blue  | 12 | GPIO 18 (A BUSY) | Blue  |
+| 14  | GND        | Black  | 15  | GPIO 22 (A DIO1) | Blue  |
+| 16  | GPIO 23 (A RF_SW) | Blue | 17 | 3.3 V (B)  | Red    |
+| 19  | MOSI       | Orange| 20  | GND        | Black  |
+| 21  | MISO       | Yellow| 22  | GPIO 25 (B NRST) | Violet |
+| 23  | SCLK       | Green | 24  | CE0 (A NSS) | Blue   |
+| 25  | GND        | Black | 26  | CE1 (B NSS) | Violet |
+| 29  | GPIO 5 (B BUSY) | Violet | 31 | GPIO 6 (B DIO1) | Violet |
+| 32  | GPIO 12 (B RF_SW) | Violet |   |            |        |
